@@ -1,27 +1,19 @@
 from abc import ABC, abstractmethod
 
+class ComponentInputs(ABC):
+    @abstractmethod
+    def initialize_variables(self):
+        pass
+
+class ComponentOutputs(ABC):
+    @abstractmethod
+    def initialize_variables(self):
+        pass
+
 class ComponentBase(ABC):
 
     @property
-    @abstractmethod
-    def inputs(self) -> dict:
-        """TODO fill this out.
-        """
-        pass
-
-    @property
-    @abstractmethod
-    def outputs(self) -> dict:
-        """TODO fill this out.
-        """
-        pass
-
-    @property
-    @abstractmethod
-    def ic(self) -> dict:
-        """TODO fill this out.
-        """
-        pass
+    def 
 
     @abstractmethod
     def solve(self, dt: int):
@@ -33,6 +25,12 @@ class ComponentBase(ABC):
         Parameters
         ----------
         dt : int
-            Time step (s). If -1, then solve for steady state.
+            Time step (s)
         """
         pass
+
+    def check(self):
+        for property, value in vars(self.inputs).items():
+            if(value is None):
+                # TODO rewrite error message.
+                raise Exception("Error input not connected")
