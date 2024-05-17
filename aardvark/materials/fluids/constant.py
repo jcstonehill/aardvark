@@ -1,30 +1,25 @@
 import aardvark.internal_api as adv
 
-from abc import ABC, abstractmethod
-class FluidBase(ABC):
+class ConstantFluid(adv.FluidBase):
     
-    def __init__(self, rho: float, k: float, cp: float, cv: float, mu: float)
+    def __init__(self, rho: float, cp: float, cv: float, mu: float, k: float):
+        self.rho = rho
+        self.cp = cp
+        self.cv = cv
+        self.mu = mu
+        self.k = k
 
-    @abstractmethod
     def rho_from_T_P(self, T: float, P: float) -> float:
-        pass
+        return self.rho
 
-    @abstractmethod
     def cp_from_T_P(self, T: float, P: float) -> float:
-        pass
+        return self.cp
 
-    @abstractmethod
+    def cv_from_T_P(self, T: float, P: float) -> float:
+        return self.cv
+
     def mu_from_T_P(self, T: float, P: float) -> float:
-        pass
+        return self.mu
 
-    @abstractmethod
     def k_from_T_P(self, T: float, P: float) -> float:
-        pass
-
-    @abstractmethod
-    def e_from_T_P(self, T: float, P: float) -> float:
-        pass
-
-    @abstractmethod
-    def T_from_e_P(self, e: float, P: float) -> float:
-        pass
+        return self.k
