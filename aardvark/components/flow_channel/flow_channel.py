@@ -102,15 +102,16 @@ class FlowChannel1D(adv.ComponentBase):
         # Outputs
         T = np.array(self.N+1)
         P = np.array(self.N+1)
-        rho = np.array(self.N+1)
-        u = np.array(self.N+1)
-        e = np.array(self.N+1)
-        E = np.array(self.N+1)
 
+        rho = np.array(self.N+1)
         mu = np.array(self.N+1)
         cp = np.array(self.N+1)
         cv = np.array(self.N+1)
         k = np.array(self.N+1)
+
+        u = np.array(self.N+1)
+        e = np.array(self.N+1)
+        E = np.array(self.N+1)
 
         Re = np.array(self.N+1)
         Pr = np.array(self.N+1)
@@ -125,15 +126,16 @@ class FlowChannel1D(adv.ComponentBase):
         # Add inlet values to variable arrays
         T[0] = T_in
         P[0] = P_in
-        rho[0] = self.fluid.rho_from_T_P(T[0], P[0])
-        u[0] = m_dot / (rho[0]*self.A)
-        e[0] = self.fluid.e_from_T_P(T[0], P[0])
-        E[0] = e[0] + 0.5*u[0]**2
 
+        rho[0] = self.fluid.rho_from_T_P(T[0], P[0])
         mu[0] = self.fluid.mu_from_T_P(T[0], P[0])
         cp[0] = self.fluid.cp_from_T_P(T[0], P[0])
         cv[0] = self.fluid.cv_from_T_P(T[0], P[0])
         k[0] = self.fluid.k_from_T_P(T[0], P[0])
+
+        u[0] = m_dot / (rho[0]*self.A)
+        e[0] = cv[0]*T[0]
+        E[0] = e[0] + 0.5*u[0]**2
 
         Re[0] = self.get_reynolds(rho[0], u[0], self.Dh, mu[0])
         Pr[0] = self.get_prandtl(cp[0], mu[0], k[0])
@@ -147,15 +149,16 @@ class FlowChannel1D(adv.ComponentBase):
             # Set initial guess for next node
             T[i+1] = T[i]
             P[i+1] = P[i]
-            rho[i+1] = rho[i]
-            u[i+1] = u[i]
-            e[i+1] = e[i]
-            E[i+1] = E[i]
 
+            rho[i+1] = rho[i]
             mu[i+1] = mu[i]
             cp[i+1] = cp[i]
             cv[i+1] = cp[i]
             k[i+1] = k[i]
+
+            u[i+1] = u[i]
+            e[i+1] = e[i]
+            E[i+1] = E[i]
 
             Re[i+1] = Re[i]
             Pr[i+1] = Pr[i]
@@ -222,7 +225,12 @@ class FlowChannel1D(adv.ComponentBase):
                 cv_avg = 0.5*cv[i+1] + 0.5*cv[i]
                 T[i+1] = (e[i+1] - e[i])*cv_avg + T[i]
 
-                rho[i+1] = self.fluid.rho_from_T_P(T[i+1], P[i+1])
+                rho_new = self.fluid.rho_from_T_P(T[i+1], P[i+1])
+                rho_res = (rho[i+1 - rho_new])**2
+                rho[i+1] = rho_new
+
+                if(np.sqrt(mass_res + momentum_res + energy_res + rho_res) < self.tol):
+                    break
 
         T0_out = T[-1] + (0.5*u[-1]**2)/cp[-1]
         P0_out = P[-1] + 0.5*rho[-1]*u[-1]**2
