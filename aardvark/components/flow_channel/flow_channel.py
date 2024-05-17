@@ -168,7 +168,10 @@ class FlowChannel1D(adv.ComponentBase):
             for _ in self.max_iter:
 
                 # Mass Conservation
-                u[i+1] = rho[i]*u[i]/rho[i+1]
+                u_new = rho[i]*u[i]/rho[i+1]
+                mass_res = (u[i+1] - u_new)**2
+
+                u[i+1] = u_new
 
                 # Momentum Conservation
                 mu[i+1] = self.fluid.mu_from_T_P(T[i+1], P[i+1])
@@ -189,7 +192,11 @@ class FlowChannel1D(adv.ComponentBase):
                 C2 = rho[i]*u[i]**2
                 C3 = -rho[i+1]*u[i+1]**2
                 C4 = -(ff_avg*self.dx*rho_avg*u_avg**2)/(2*self.Dh)
-                P[i+1] = C1 + C2 + C3 + C4
+
+                P_new = C1 + C2 + C3 + C4
+                momentum_res = (P[i+1] - P_new)**2
+
+                P[i+1] = P_new
 
                 # Energy Equation
                 Nu[i+1] = self.Nu_cor.Nu(Re[i+1], Pr[i+1])
@@ -204,7 +211,10 @@ class FlowChannel1D(adv.ComponentBase):
                 C4 = u[i]*rho[i]*E[i]
                 C5 = u[i]*P[i]
 
-                E[i+1] = C1*(C2+C3+C4+C5)
+                E_new = C1*(C2+C3+C4+C5)
+                energy_res = (E[i+1] - E_new)**2
+
+                E[i+1] = E_new
                 e[i+1] = E[i+1] - 0.5*u[i+1]**2
 
                 # Fluid Properties to get T and rho
@@ -214,7 +224,14 @@ class FlowChannel1D(adv.ComponentBase):
 
                 rho[i+1] = self.fluid.rho_from_T_P(T[i+1], P[i+1])
 
+        T0_out = T[-1] + (0.5*u[-1]**2)/cp[-1]
+        P0_out = P[-1] + 0.5*rho[-1]*u[-1]**2
+
         # Update output variables
+        self.outputs.T0_out.set(T0_out)
+        self.outputs.P0_out.set(P0_out)
+        self.outputs.m_dot.set(m_dot)
+
         self.outputs.T.set(T)
         self.outputs.P.set(P)
         self.outputs.rho.set(rho)
