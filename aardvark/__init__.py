@@ -1,7 +1,7 @@
 # Builders
 
 # Components
-
+from aardvark.components.flow_channel.flow_channel import FlowChannel1D
 # Functions
 
 from aardvark.functions.nu_correlations import DittusBoelterNuCorrelation
