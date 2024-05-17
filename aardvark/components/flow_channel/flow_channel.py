@@ -8,50 +8,55 @@ class FlowChannel1DInputs(adv.DataSetBase):
         self.P0_in: adv.FloatVar = None
         self.m_dot: adv.FloatVar = None
 
+class FlowChannel1DOptionalInputs(adv.DataSetBase):
+    def __init__(self):
         self.T_wall: adv.FloatArrayVar = None
 
 class FlowChannel1DOutputs(adv.DataSetBase):
-    def __init__(self):
-        self.T0_out: adv.FloatVar = adv.FloatVar()
-        self.P0_out: adv.FloatVar = adv.FloatVar()
-        self.m_dot: adv.FloatVar = adv.FloatVar()
+    def __init__(self, N, L):
+        self.T0_out: adv.FloatVar = adv.FloatVar(300.)
+        self.P0_out: adv.FloatVar = adv.FloatVar(101325.)
+        self.m_dot: adv.FloatVar = adv.FloatVar(0.01)
 
-        self.node_x: adv.FloatArrayVar = adv.FloatArrayVar()
+        self.node_x: adv.FloatArrayVar = adv.FloatArrayVar(np.linspace(0, L, N+1))
 
-        self.T: adv.FloatArrayVar = adv.FloatArrayVar()
-        self.P: adv.FloatArrayVar = adv.FloatArrayVar()
-        self.u: adv.FloatArrayVar = adv.FloatArrayVar()
-        self.e: adv.FloatArrayVar = adv.FloatArrayVar()
-        self.E: adv.FloatArrayVar = adv.FloatArrayVar()
+        self.T: adv.FloatArrayVar = adv.FloatArrayVar(np.array(N*[300]))
+        self.P: adv.FloatArrayVar = adv.FloatArrayVar(np.array(N*[101325]))
+        self.u: adv.FloatArrayVar = adv.FloatArrayVar(np.array(N*[1]))
+        self.e: adv.FloatArrayVar = adv.FloatArrayVar(np.array(N*[0]))
+        self.E: adv.FloatArrayVar = adv.FloatArrayVar(np.array(N*[0]))
         
-        self.rho: adv.FloatArrayVar = adv.FloatArrayVar()
-        self.mu: adv.FloatArrayVar = adv.FloatArrayVar()
-        self.cp: adv.FloatArrayVar = adv.FloatArrayVar()
-        self.cv: adv.FloatArrayVar = adv.FloatArrayVar()
-        self.k: adv.FloatArrayVar = adv.FloatArrayVar()
+        self.rho: adv.FloatArrayVar = adv.FloatArrayVar(np.array(N*[0.1]))
+        self.mu: adv.FloatArrayVar = adv.FloatArrayVar(np.array(N*[1e-5]))
+        self.cp: adv.FloatArrayVar = adv.FloatArrayVar(np.array(N*[5000]))
+        self.cv: adv.FloatArrayVar = adv.FloatArrayVar(np.array(N*[3000]))
+        self.k: adv.FloatArrayVar = adv.FloatArrayVar(np.array(N*[0.1]))
 
-        self.Re: adv.FloatArrayVar = adv.FloatArrayVar()
-        self.Pr: adv.FloatArrayVar = adv.FloatArrayVar()
+        self.Re: adv.FloatArrayVar = adv.FloatArrayVar(np.array(N*[220]))
+        self.Pr: adv.FloatArrayVar = adv.FloatArrayVar(np.array(N*[0.5]))
 
-        self.ff: adv.FloatArrayVar = adv.FloatArrayVar()
-        self.Nu: adv.FloatArrayVar = adv.FloatArrayVar()
-        self.htc: adv.FloatArrayVar = adv.FloatArrayVar()
+        self.ff: adv.FloatArrayVar = adv.FloatArrayVar(np.array(N*[0.2909]))
+        self.Nu: adv.FloatArrayVar = adv.FloatArrayVar(np.array(N*[1]))
+        self.htc: adv.FloatArrayVar = adv.FloatArrayVar(np.array(N*[1.5]))
 
 class FlowChannel1D(adv.ComponentBase):
 
 # https://cardinal.cels.anl.gov/theory/thm.html
 
-    def __init__(self, N: int, A: float, P_wall: float,  L: float, fluid: adv.FluidBase, 
+    def __init__(self, N: int, A: float, P_wall: float,  L: float, eps: float, fluid: adv.FluidBase, 
             Nu_cor: adv.NuCorrelationBase, ff_cor: adv.FFCorrelationBase, tol = 1e-6, max_iter_per_node = 100):
         """TODO fill this out.
         """
         self.inputs: FlowChannel1DInputs = FlowChannel1DInputs()
-        self.outputs: FlowChannel1DOutputs = FlowChannel1DOutputs()
+        self.opt_inputs: FlowChannel1DOptionalInputs = FlowChannel1DOptionalInputs()
+        self.outputs: FlowChannel1DOutputs = FlowChannel1DOutputs(N, L)
 
         self.N = N
         self.A = A
         self.P_wall = P_wall
         self.L = L
+        self.eps = eps
+
         self.fluid = fluid
         self.Nu_cor = Nu_cor
         self.ff_cor = ff_cor
@@ -61,7 +66,6 @@ class FlowChannel1D(adv.ComponentBase):
 
         self.Dh = 4*A/P_wall
         self.dx = L/N
-        self.outputs.node_x.set(np.linspace(0, L, N+1))
 
     def get_static_conditions(self, T0: float, P0: float, m_dot: float, A: float) -> tuple:
         T = T0
@@ -94,31 +98,32 @@ class FlowChannel1D(adv.ComponentBase):
 
     def solve_steady_state(self):
         # Inputs
-        T0_in = self.inputs.T0_in
-        P0_in = self.inputs.P0_in
-        m_dot = self.inputs.m_dot
-        T_wall = self.inputs.T_wall
+        T0_in = self.inputs.T0_in.get()
+        P0_in = self.inputs.P0_in.get()
+        m_dot = self.inputs.m_dot.get()
+
+        T_wall = self.opt_inputs.T_wall.get()
 
         # Outputs
-        T = np.array(self.N+1)
-        P = np.array(self.N+1)
+        T = np.zeros(self.N+1)
+        P = np.zeros(self.N+1)
 
-        rho = np.array(self.N+1)
-        mu = np.array(self.N+1)
-        cp = np.array(self.N+1)
-        cv = np.array(self.N+1)
-        k = np.array(self.N+1)
+        rho = np.zeros(self.N+1)
+        mu = np.zeros(self.N+1)
+        cp = np.zeros(self.N+1)
+        cv = np.zeros(self.N+1)
+        k = np.zeros(self.N+1)
 
-        u = np.array(self.N+1)
-        e = np.array(self.N+1)
-        E = np.array(self.N+1)
+        u = np.zeros(self.N+1)
+        e = np.zeros(self.N+1)
+        E = np.zeros(self.N+1)
 
-        Re = np.array(self.N+1)
-        Pr = np.array(self.N+1)
+        Re = np.zeros(self.N+1)
+        Pr = np.zeros(self.N+1)
 
-        ff = np.array(self.N+1)
-        Nu = np.array(self.N+1)
-        htc = np.array(self.N+1)
+        ff = np.zeros(self.N+1)
+        Nu = np.zeros(self.N+1)
+        htc = np.zeros(self.N+1)
 
         # Get Static Conditions
         T_in, P_in = self.get_static_conditions(T0_in, P0_in, m_dot, self.A)
@@ -140,7 +145,7 @@ class FlowChannel1D(adv.ComponentBase):
         Re[0] = self.get_reynolds(rho[0], u[0], self.Dh, mu[0])
         Pr[0] = self.get_prandtl(cp[0], mu[0], k[0])
 
-        ff[0] = self.ff_cor.ff(Re[0], Pr[0])
+        ff[0] = self.ff_cor.ff(self.eps, Re[0], Pr[0])
         Nu[0] = self.Nu_cor.Nu(Re[0], Pr[0])
         htc[0] = Nu[0] * k[0] / self.Dh
 
@@ -168,7 +173,7 @@ class FlowChannel1D(adv.ComponentBase):
             htc[i+1] = htc[i]
 
             # Non-linear loop for conservation equations
-            for _ in self.max_iter:
+            for _ in range(self.max_iter):
 
                 # Mass Conservation
                 u_new = rho[i]*u[i]/rho[i+1]
@@ -185,8 +190,7 @@ class FlowChannel1D(adv.ComponentBase):
                 Re[i+1] = self.get_reynolds(rho[i+1], u[i+1], self.Dh, mu[i+1])
                 Pr[i+1] = self.get_prandtl(cp[i+1], mu[i+1], k[i+1])
 
-                ff[i+1] = self.ff_cor.ff(Re[i+1], Pr[i+1])
-
+                ff[i+1] = self.ff_cor.ff(self.eps, Re[i+1], Pr[i+1])
                 rho_avg = (rho[i] + rho[i+1])/2
                 u_avg = (u[i] + u[i+1]) / 2
                 ff_avg = (ff[i] + ff[i+1]) / 2
@@ -195,11 +199,17 @@ class FlowChannel1D(adv.ComponentBase):
                 C2 = rho[i]*u[i]**2
                 C3 = -rho[i+1]*u[i+1]**2
                 C4 = -(ff_avg*self.dx*rho_avg*u_avg**2)/(2*self.Dh)
+                
+                
+                
 
                 P_new = C1 + C2 + C3 + C4
+
                 momentum_res = (P[i+1] - P_new)**2
 
                 P[i+1] = P_new
+
+                print(P)
 
                 # Energy Equation
                 Nu[i+1] = self.Nu_cor.Nu(Re[i+1], Pr[i+1])
@@ -209,7 +219,15 @@ class FlowChannel1D(adv.ComponentBase):
                 T_avg = (T[i] + T[i+1])/2
 
                 C1 = 1/(u[i+1]*rho[i+1])
-                C2 = self.dx*htc_avg*self.P_wall*(T_wall[i]-T_avg)/self.A
+
+                # Adiabatic Wall
+                if(T_wall is None):
+                    C2 = 0
+
+                # Heat Transfer from Wall Temperature
+                else:
+                    C2 = self.dx*htc_avg*self.P_wall*(T_wall[i]-T_avg)/self.A
+
                 C3 = -u[i+1]*P[i+1]
                 C4 = u[i]*rho[i]*E[i]
                 C5 = u[i]*P[i]
@@ -223,10 +241,10 @@ class FlowChannel1D(adv.ComponentBase):
                 # Fluid Properties to get T and rho
 
                 cv_avg = 0.5*cv[i+1] + 0.5*cv[i]
-                T[i+1] = (e[i+1] - e[i])*cv_avg + T[i]
+                T[i+1] = (e[i+1] - e[i])/cv_avg + T[i]
 
                 rho_new = self.fluid.rho_from_T_P(T[i+1], P[i+1])
-                rho_res = (rho[i+1 - rho_new])**2
+                rho_res = (rho[i+1] - rho_new)**2
                 rho[i+1] = rho_new
 
                 if(np.sqrt(mass_res + momentum_res + energy_res + rho_res) < self.tol):
