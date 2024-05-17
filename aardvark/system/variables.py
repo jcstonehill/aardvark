@@ -24,6 +24,17 @@ class VarBase(ABC):
     def val_is_valid(self, var) -> bool:
         pass
 
+class NoneVar(VarBase):
+
+    def __init__(self):
+        self._val = None
+
+    def set(self, val):
+        pass
+
+    def val_is_valid(self, val) -> bool:
+        return True
+
 class FloatVar(VarBase):
     def val_is_valid(self, val) -> bool:
         if(type(val) is not float):
