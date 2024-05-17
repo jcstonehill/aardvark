@@ -11,6 +11,7 @@ from aardvark.functions.ff_correlations import FFCorrelationBase
 from aardvark.functions.ff_correlations import ColebrookWhiteFFCorrelation
 
 # Materials
+from aardvark.materials.fluids.constant import ConstantFluid
 
 # Solvers
 
