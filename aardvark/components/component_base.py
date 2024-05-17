@@ -1,20 +1,22 @@
+import aardvark.internal_api as adv
+
 from abc import ABC, abstractmethod
 
-class ComponentInputs(ABC):
-    @abstractmethod
-    def initialize_variables(self):
-        pass
-
-class ComponentOutputs(ABC):
-    @abstractmethod
-    def initialize_variables(self):
-        pass
+class DataSetBase(ABC):
+    pass
 
 class ComponentBase(ABC):
+    
+    @property
+    @abstractmethod
+    def inputs(self):
+        pass
 
     @property
-    def 
-
+    @abstractmethod
+    def outputs(self):
+        pass
+    
     @abstractmethod
     def solve(self, dt: int):
         """Solve for the component's solution variables at next timestep.
