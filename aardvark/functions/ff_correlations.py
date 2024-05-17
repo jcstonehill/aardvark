@@ -4,7 +4,7 @@ import numpy as np
 
 class FFCorrelationBase(ABC):
     @abstractmethod
-    def ff(self, Re, Pr):
+    def ff(self, eps, Dh, Re):
         pass
 
 class ColebrookWhiteFFCorrelation(FFCorrelationBase):
