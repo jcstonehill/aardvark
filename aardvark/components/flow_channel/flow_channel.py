@@ -208,7 +208,10 @@ class FlowChannel1D(adv.ComponentBase):
                 e[i+1] = E[i+1] - 0.5*u[i+1]**2
 
                 # Fluid Properties to get T and rho
-                T[i+1] = self.fluid.T_from_e_P(e[i+1], P[i+1])
+
+                cv_avg = 0.5*cv[i+1] + 0.5*cv[i]
+                T[i+1] = (e[i+1] - e[i])*cv_avg + T[i]
+
                 rho[i+1] = self.fluid.rho_from_T_P(T[i+1], P[i+1])
 
         # Update output variables
