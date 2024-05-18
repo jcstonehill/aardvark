@@ -47,6 +47,8 @@ class FlowChannel1D(adv.ComponentBase):
             Nu_cor: adv.NuCorrelationBase, ff_cor: adv.FFCorrelationBase, tol = 1e-6, max_iter_per_node = 100):
         """TODO fill this out.
         """
+        super().__init__()
+
         self.inputs: FlowChannel1DInputs = FlowChannel1DInputs()
         self.opt_inputs: FlowChannel1DOptionalInputs = FlowChannel1DOptionalInputs()
         self.outputs: FlowChannel1DOutputs = FlowChannel1DOutputs(N, L)

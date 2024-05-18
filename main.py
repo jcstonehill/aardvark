@@ -1,4 +1,5 @@
 import aardvark as adv
+import aardvark.internal_api as adv_int
 import matplotlib.pyplot as plt
 
 he = adv.ConstantFluid(0.166, 5192.6,  3115.6, 3.22639e-5, 0.2256)
@@ -25,10 +26,10 @@ fc.check()
 
 fc.solve_steady_state()
 
-print(fc.outputs.P.get())
-plt.plot(fc.outputs.node_x.get(), fc.outputs.P.get())
+# print(fc.outputs.P.get())
+# plt.plot(fc.outputs.node_x.get(), fc.outputs.P.get())
+# ax = plt.gca()
+# ax.ticklabel_format(useOffset=False)
 
-#ax.ticklabel_format(useOffset=False)
-
-plt.show()
+# plt.show()
 # plt.savefig("plot.png")

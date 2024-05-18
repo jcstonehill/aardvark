@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-class FluidBase(ABC):
+class Fluid(ABC):
     
     @abstractmethod
     def rho_from_T_P(self, T: float, P: float) -> float:

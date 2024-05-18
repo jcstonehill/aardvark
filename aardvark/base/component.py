@@ -1,18 +1,29 @@
 import aardvark.internal_api as adv
 
 from abc import ABC, abstractmethod
+from itertools import count
 
 import numpy as np
 
-class DataSetBase(ABC):
+
+class DataSet():
     pass
 
-class ComponentBase(ABC):
+class Component(ABC):
     
+    _id = count(0)
+
     def __init__(self):
-        self.inputs = DataSetBase()
-        self.opt_inputs = DataSetBase()
-        self.outputs = DataSetBase()
+
+        id = Component._id
+        self.id = id
+        next(Component._id)
+
+        self.name = "Component " + str(id)
+
+        self.inputs = DataSet()
+        self.opt_inputs = DataSet()
+        self.outputs = DataSet()
 
     @abstractmethod
     def solve_steady_state(self):
