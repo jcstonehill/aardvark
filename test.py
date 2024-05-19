@@ -1,14 +1,8 @@
+import aardvark.internal_api as adv
 import numpy as np
 
-my = 5*[10]
-my2 = 5*[8]
+print(adv.functions.laminar_friction_factor(1000))
+print(adv.functions.churchill(150-6, 3e-4, 1000))
+my_func = adv.functions.churchill
 
-print(my)
-print(my2)
-
-my = np.array(my)
-my2 = np.array(my2)
-
-diff = my-my2
-print(diff**2)
-
+print(my_func(150e-6, 3e-4, 1000))

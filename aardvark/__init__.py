@@ -2,13 +2,9 @@
 
 # Components
 from aardvark.components.flow_channel.flow_channel import FlowChannel1D
+
 # Functions
-
-from aardvark.functions.nu_correlations import DittusBoelterNuCorrelation
-
-from aardvark.functions.ff_correlations import FFCorrelationBase
-
-from aardvark.functions.ff_correlations import ColebrookWhiteFFCorrelation
+from aardvark import functions
 
 # Materials
 from aardvark.materials.fluids.constant import ConstantFluid

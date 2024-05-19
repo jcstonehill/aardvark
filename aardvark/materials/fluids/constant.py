@@ -1,8 +1,10 @@
 import aardvark.internal_api as adv
 
-class ConstantFluid(adv.FluidBase):
+class ConstantFluid(adv.Fluid):
     
-    def __init__(self, rho: float, cp: float, cv: float, mu: float, k: float):
+    def __init__(self, rho: float = 997, cp: float = 4184, cv: float = 4184, mu: float = 0.001, k: float = 0.6):
+        # Defaults are water properties
+
         self.rho = rho
         self.cp = cp
         self.cv = cv

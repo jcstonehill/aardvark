@@ -6,24 +6,45 @@ from itertools import count
 import numpy as np
 
 
-class DataSet():
+class DataSet(ABC):
     pass
 
 class Component(ABC):
-    
     _id = count(0)
 
-    def __init__(self):
+    @property
+    @abstractmethod
+    def component_name(self) -> str:
+        return "Component"
 
+    def __init__(self, name = None, opts: dict = None):
         id = Component._id
         self.id = id
         next(Component._id)
 
-        self.name = "Component " + str(id)
+        if(name is None):
+            self.name = "Component " + str(id)
 
-        self.inputs = DataSet()
-        self.opt_inputs = DataSet()
-        self.outputs = DataSet()
+        else:
+            self.name = name
+
+        self.define_inputs()
+        self.define_setup()
+        self.define_outputs()
+
+        self.opts = opts
+
+    @abstractmethod
+    def define_inputs(self):
+        pass
+
+    @abstractmethod
+    def define_setup(self):
+        pass
+
+    @abstractmethod
+    def define_outputs(self):
+        pass
 
     @abstractmethod
     def solve_steady_state(self):
@@ -31,7 +52,10 @@ class Component(ABC):
         """
         pass
 
+        
     def check(self):
+        # TODO UPDATE SO THAT EACH COMPONENT CHECKS ITSELF.
+        # This function should cast inputs to appropriate aardvark variables (i.e. float -> adv.FloatVar)
 
         inputs = vars(self.inputs)
 
@@ -51,12 +75,3 @@ class Component(ABC):
 
             if(type(value) is np.ndarray):
                 inputs[property] = adv.FloatArrayVar(value)
-
-        opt_inputs = vars(self.opt_inputs)
-
-        for property, value in opt_inputs.items():
-            if(value is None):
-                opt_inputs[property] = adv.NoneVar()
-
-            if(type(value) is list):
-                opt_inputs[property] = adv.FloatArrayVar(np.array(value))
