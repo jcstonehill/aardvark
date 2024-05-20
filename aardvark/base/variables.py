@@ -15,9 +15,7 @@ class Variable(ABC):
         
         if(self.val_is_valid(init_val)):
             self._val = init_val
-            self._prev_val = None
-
-            adv.variables.append(self)
+            self._prev_val = init_val
 
     def set(self, val):
         self._prev_val = self._val
@@ -42,16 +40,13 @@ class NoneVar(Variable):
         pass
 
     def r2(self) -> float:
-        return None
+        return 0
 
     def val_is_valid(self, val) -> bool:
         return True
 
 class FloatVar(Variable):
     def r2(self) -> float:
-        if(self._prev_val is None):
-            return None
-        
         return (self._val - self._prev_val)**2
     
     def val_is_valid(self, val) -> bool:
@@ -62,10 +57,8 @@ class FloatVar(Variable):
     
 class FloatArrayVar(Variable):
     def r2(self) -> float:
-        if(self._prev_val is None):
-            return None
-        
-        return (self._val - self._prev_val)**2
+
+        return sum((self._val - self._prev_val)**2)
         
     def val_is_valid(self, val) -> bool:
         if(type(val) is not np.ndarray):

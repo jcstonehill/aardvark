@@ -1,7 +1,39 @@
 #import aardvark.internal_api as adv
 
 
-start_message = "Welcome to AARDVARK!\n\n"
+start_message = """
+                                                #######                               
+                                         #####################                        
+                                      #######             #######                     
+                                   ######                      #####                  
+    ##               ####       ######                            ####                
+      ##            ##   #     ####                                  ###              
+    ## ###         #     #  ####                                      ####            
+     ##  ###       #      ####                                          ###           
+      ##   ###     #      ##                                              ##          
+       ##   ###   #       #                                                ##         
+        ##    ### #   #  #                                                  ##        
+         ###   ####  #                                                       ##       
+           ##         #                                                      ##       
+            ##   ###                                                          ##      
+           ##  ##                                                             ##      
+          ##                                                              #    ##     
+        ###     ###                                                     ###### ##     
+        ##      #                         ###                          ##    # ##     
+       ##                                   ##          ###           ##        #     
+      ##           ######  ###               # ##    ####  ###        ## ##     ##    
+   ####          ####    ##  ####            ## ##  #      # ##      ##   ##    ##    
+ ####          ##         ##    ##  #       ##   ###       ## ##    ##     ##    ##   
+ ##         ###           ##      # #       ##     ##      ## ##    ##      ##    #   
+ ##      ###               ##    ## ##      ##      ##    ### ##    ##       ##   ##  
+  #### ###                  ##   ##  ##    ##      ##    ###  ##    ##        ##   ## 
+   ######                   ##   ##  ###   ##    ###    ##    ##    ###        ###  # 
+                            ##    #   ##  ##   ####    ###   ###     ##          ## # 
+                        #####  ###   ####    #      ####    #       ##           ###  
+                        ##   ####  ##   ###    #########     #########              # 
+
+                        
+"""
 
 class Log:
     case_name = ""
@@ -20,6 +52,23 @@ class Log:
 
         message = message + "\n"
         cls._add_to_log_file(message)
+
+    @classmethod
+    def line_break(cls):
+        print("\n")
+
+        cls._add_to_log_file("\n")
+
+    @classmethod
+    def error(cls, message: str):
+        message = "AARDVARK :: ERROR :: " + message
+
+        print(message)
+        
+        message = message + "\n"
+        cls._add_to_log_file(message)
+        
+        raise Exception(message)
 
     @classmethod
     def hanging_message(cls, message: str):
@@ -44,10 +93,3 @@ class Log:
     def _add_to_log_file(cls, message: str):
         with open("output/" + cls.case_name + "/aardvark.log", "a") as file:
             file.write(message)
-
-if __name__ == "__main__":
-    Log.create("case_0")
-
-    Log.message("hello!")
-    Log.hanging_message("This is the start ... ... ... ")
-    Log.end_of_hanging_message("THIS IS THE END.")

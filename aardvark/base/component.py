@@ -17,7 +17,7 @@ class Component(ABC):
     def component_name(self) -> str:
         return "Component"
 
-    def __init__(self, name = None, opts: dict = None):
+    def __init__(self, name = None):
         id = Component._id
         self.id = id
         next(Component._id)
@@ -32,7 +32,7 @@ class Component(ABC):
         self.define_setup()
         self.define_outputs()
 
-        self.opts = opts
+        adv.components.append(self)
 
     @abstractmethod
     def define_inputs(self):

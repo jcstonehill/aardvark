@@ -8,67 +8,94 @@ class FlowChannel1DInputs(adv.DataSet):
         self.P0_in: adv.FloatVar = None
         self.m_dot: adv.FloatVar = None
 
-        self.T_wall: adv.FloatArrayVar = adv.NoneVar()
-        self.Q_dot: adv.FloatArrayVar = adv.NoneVar()
-
-class FlowChannel1DSetup(adv.DataSet):
-    def __init__(self):
-        self.N: float = None
-        self.A: float = None
-        self.P_wall: float = None
-        self.L: float = None
-        self.eps: float = None
-        self.fluid: adv.Fluid = None
-
-        self.Nu_func: function = adv.functions.dittus_boelter
-        self.ff_func: function = adv.functions.churchill
-        self.tol: float = np.array(1e-6)
-        self.max_iter_per_node = np.array(100)
+        self.T_wall: adv.FloatArrayVar = None
+        self.Q_dot: adv.FloatArrayVar = None
 
 class FlowChannel1DOutputs(adv.DataSet):
     def __init__(self):
-        self.T0_out: adv.FloatVar = adv.FloatVar(300.)
-        self.P0_out: adv.FloatVar = adv.FloatVar(101325.)
-        self.m_dot: adv.FloatVar = adv.FloatVar(0.001)
+        self.T0_out: adv.FloatVar = adv.System.define_variable(adv.FloatVar)
+        self.P0_out: adv.FloatVar = adv.System.define_variable(adv.FloatVar)
+        self.m_dot: adv.FloatVar = adv.System.define_variable(adv.FloatVar)
 
-        self.node_x: adv.FloatArrayVar = adv.FloatArrayVar(np.linspace(0, 1))
+        self.node_x: adv.FloatArrayVar = adv.System.define_variable(adv.FloatArrayVar)
 
-        self.T: adv.FloatArrayVar = adv.FloatArrayVar(np.array(2*[300]))
-        self.P: adv.FloatArrayVar = adv.FloatArrayVar(np.array(2*[101325]))
-        self.u: adv.FloatArrayVar = adv.FloatArrayVar(np.array(2*[1]))
-        self.e: adv.FloatArrayVar = adv.FloatArrayVar(np.array(2*[0]))
-        self.E: adv.FloatArrayVar = adv.FloatArrayVar(np.array(2*[0]))
+        self.T: adv.FloatArrayVar = adv.System.define_variable(adv.FloatArrayVar)
+        self.P: adv.FloatArrayVar = adv.System.define_variable(adv.FloatArrayVar)
+        self.u: adv.FloatArrayVar = adv.System.define_variable(adv.FloatArrayVar)
+        self.e: adv.FloatArrayVar = adv.System.define_variable(adv.FloatArrayVar)
+        self.E: adv.FloatArrayVar = adv.System.define_variable(adv.FloatArrayVar)
+
+        self.rho: adv.FloatArrayVar = adv.System.define_variable(adv.FloatArrayVar)
+        self.mu: adv.FloatArrayVar = adv.System.define_variable(adv.FloatArrayVar)
+        self.cp: adv.FloatArrayVar = adv.System.define_variable(adv.FloatArrayVar)
+        self.cv: adv.FloatArrayVar = adv.System.define_variable(adv.FloatArrayVar)
+        self.k: adv.FloatArrayVar = adv.System.define_variable(adv.FloatArrayVar)
+
+        self.Re: adv.FloatArrayVar = adv.System.define_variable(adv.FloatArrayVar)
+        self.Pr: adv.FloatArrayVar = adv.System.define_variable(adv.FloatArrayVar)
+
+        self.ff: adv.FloatArrayVar = adv.System.define_variable(adv.FloatArrayVar)
+        self.Nu: adv.FloatArrayVar = adv.System.define_variable(adv.FloatArrayVar)
+        self.htc: adv.FloatArrayVar = adv.System.define_variable(adv.FloatArrayVar)
+
+        self.T_wall: adv.FloatArrayVar = adv.System.define_variable(adv.FloatArrayVar)
+        self.Q_dot: adv.FloatArrayVar = adv.System.define_variable(adv.FloatArrayVar)
+
+class FlowChannel1DInitialConditions(adv.DataSet):
+    def __init__(self):
+        self.T0_out = 300
+        self.P0_out = 101325
+        self.m_dot = 0.001
         
-        self.rho: adv.FloatArrayVar = adv.FloatArrayVar(np.array(2*[0.1]))
-        self.mu: adv.FloatArrayVar = adv.FloatArrayVar(np.array(2*[1e-5]))
-        self.cp: adv.FloatArrayVar = adv.FloatArrayVar(np.array(2*[5000]))
-        self.cv: adv.FloatArrayVar = adv.FloatArrayVar(np.array(2*[3000]))
-        self.k: adv.FloatArrayVar = adv.FloatArrayVar(np.array(2*[0.1]))
+        self.node_x = np.array([0, 1])
 
-        self.Re: adv.FloatArrayVar = adv.FloatArrayVar(np.array(2*[220]))
-        self.Pr: adv.FloatArrayVar = adv.FloatArrayVar(np.array(2*[0.5]))
+        self.T = 300
+        self.P = 300
+        self.u = 1
+        self.e = 0
+        self.E = 0
 
-        self.ff: adv.FloatArrayVar = adv.FloatArrayVar(np.array(2*[0.2909]))
-        self.Nu: adv.FloatArrayVar = adv.FloatArrayVar(np.array(2*[1]))
-        self.htc: adv.FloatArrayVar = adv.FloatArrayVar(np.array(2*[1.5]))
+        self.rho = 0.1
+        self.mu = 1e-5
+        self.cp = 5000
+        self.cv = 3000
+        self.k = 0.1
 
-        self.T_wall: adv.FloatArrayVar = adv.FloatArrayVar(np.array([300]))
-        self.Q_dot: adv.FloatArrayVar = adv.FloatArrayVar(np.array([0]))
+        self.Re = 220
+        self.Pr = 0.5
+
+        self.ff = 0.2909
+        self.Nu = 1
+        self.htc = 1.5
+
+        self.T_wall = 300
+        self.Q_dot = 0
 
 class FlowChannel1D(adv.Component):
 
+    # https://cardinal.cels.anl.gov/theory/thm.html
+
     component_name = "FlowChannel1D"
 
-# https://cardinal.cels.anl.gov/theory/thm.html
+    def __init__(self, name: str, N: float, A: float, P_wall: float, L: float, eps: float, 
+                 fluid: adv.Fluid, Nu_func: function = adv.functions.dittus_boelter,
+                 ff_func: function = adv.functions.churchill, tol: float = 1e-6, 
+                 max_iter_per_node: float = 100):
+        self.name = name
+        self.N = N
+        self.A = A
+        self.P_wall = P_wall
+        self.L = L
+        self.eps = eps
+        self.fluid = fluid
+        self.Nu_func = Nu_func
+        self.ff_func = ff_func
+        self.tol = tol
+        self.max_iter_per_node = max_iter_per_node
 
-    def define_inputs(self):
         self.inputs = FlowChannel1DInputs()
-    
-    def define_setup(self):
-        self.setup = FlowChannel1DSetup()
-
-    def define_outputs(self):
         self.outputs = FlowChannel1DOutputs()
+        self.initial = FlowChannel1DInitialConditions()
 
     def solve_steady_state(self):
         # Inputs
@@ -80,17 +107,17 @@ class FlowChannel1D(adv.Component):
         Q_dot = self.inputs.Q_dot.get()
 
         # Setup
-        N = self.setup.N
-        A = self.setup.A
-        P_wall = self.setup.P_wall
-        L = self.setup.L
-        eps = self.setup.eps
+        N = self.N
+        A = self.A
+        P_wall = self.P_wall
+        L = self.L
+        eps = self.eps
 
-        fluid = self.setup.fluid
-        Nu_func = self.setup.Nu_func
-        ff_func = self.setup.ff_func
-        tol = self.setup.tol
-        max_iter_per_node = self.setup.max_iter_per_node
+        fluid = self.fluid
+        Nu_func = self.Nu_func
+        ff_func = self.ff_func
+        tol = self.tol
+        max_iter_per_node = self.max_iter_per_node
 
         # Outputs
         T = np.zeros(N+1)
@@ -187,7 +214,6 @@ class FlowChannel1D(adv.Component):
 
             # Non-linear loop for conservation equations
             for _ in range(max_iter_per_node):
-
                 # Mass Conservation
                 u_new = rho[i]*u[i]/rho[i+1]
                 mass_res = (u[i+1] - u_new)**2

@@ -10,5 +10,5 @@ from aardvark import functions
 from aardvark.materials.fluids.constant import ConstantFluid
 
 # Solvers
-
+from aardvark.base.steady_state_solver import solve_steady_state
 # System

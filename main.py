@@ -19,13 +19,17 @@ fc.setup.eps = 0
 fc.setup.fluid = he
 
 fc.check()
+adv.solve_steady_state("my_case")
 
-fc.solve_steady_state()
+#
+# adv.solve_steady_state("my_case")
+
+# fc.solve_steady_state()
 
 
-# print(fc.outputs.P.get())
-plt.plot(fc.outputs.node_x.get(), fc.outputs.rho.get())
-ax = plt.gca()
-ax.ticklabel_format(useOffset=False)
+# # print(fc.outputs.P.get())
+# plt.plot(fc.outputs.node_x.get(), fc.outputs.rho.get())
+# ax = plt.gca()
+# ax.ticklabel_format(useOffset=False)
 
-plt.show()
+# plt.show()
