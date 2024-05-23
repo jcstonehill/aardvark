@@ -112,6 +112,7 @@ class FlowChannel1D(adv.Component):
             self.T = adv.Mesh1DVar("T", 300)
             self.P = adv.Mesh1DVar("P", 101325)
             self.u = adv.Mesh1DVar("u", 1)
+            self.htc = adv.Mesh1DVar("htc", 0)
 
             self.T_wall = adv.Mesh1DVar("T_wall", 300)
 
@@ -158,6 +159,7 @@ class FlowChannel1D(adv.Component):
         self.outputs.T.initialize(self.node_x)
         self.outputs.P.initialize(self.node_x)
         self.outputs.u.initialize(self.node_x)
+        self.outputs.htc.initialize(self.node_x)
         
         self.outputs.T_wall.initialize(self.cell_x)
 
@@ -288,7 +290,7 @@ class FlowChannel1D(adv.Component):
                 C1 = P[i]
                 C2 = rho[i]*u[i]**2
                 C3 = -rho[i+1]*u[i+1]**2
-                C4 = -(ff_avg*dx*rho_avg*u_avg**2)/(2*Dh)
+                C4 = -(ff_avg*dx[i]*rho_avg*u_avg**2)/(2*Dh)
 
                 P_new = C1 + C2 + C3 + C4
 
@@ -332,7 +334,7 @@ class FlowChannel1D(adv.Component):
                     break
 
             # Node has converged, so wall temperature can now be calculated.
-            T_wall[i] = Q_dot[i]*A/(dx*htc_avg*P_wall) + T_avg
+            T_wall[i] = Q_dot[i]*A/(dx[i]*htc_avg*P_wall) + T_avg
 
         T0_out, P0_out = adv.functions.static_to_stagnation_flow(T[-1], P[-1], m_dot, A, fluid)
 
@@ -344,7 +346,10 @@ class FlowChannel1D(adv.Component):
         self.outputs.T.value = T
         self.outputs.P.value = P
         self.outputs.u.value = u
+        self.outputs.htc.value = htc
 
         self.outputs.T_wall.value = T_wall
+
+        print(T_wall)
 
         # TODO Post values as well.
