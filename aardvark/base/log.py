@@ -55,7 +55,7 @@ class Log:
 
     @classmethod
     def line_break(cls):
-        print("\n")
+        print("")
 
         cls._add_to_log_file("\n")
 
@@ -88,6 +88,9 @@ class Log:
     def _create_log_file(cls):
         with open("output/" + cls.case_name + "/aardvark.log", "w") as file:
             file.write(start_message)
+
+        cls.message("Welcome to AARDVARK!")
+        cls.line_break()
 
     @classmethod
     def _add_to_log_file(cls, message: str):

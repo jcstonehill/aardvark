@@ -1,91 +1,130 @@
 import aardvark.internal_api as adv
 
-import numpy as np
-
-class FlowChannel1DInputs(adv.DataSet):
-    def __init__(self):
-        self.T0_in: adv.FloatVar = None
-        self.P0_in: adv.FloatVar = None
-        self.m_dot: adv.FloatVar = None
-
-        self.T_wall: adv.FloatArrayVar = None
-        self.Q_dot: adv.FloatArrayVar = None
-
-class FlowChannel1DOutputs(adv.DataSet):
-    def __init__(self):
-        self.T0_out: adv.FloatVar = adv.System.define_variable(adv.FloatVar)
-        self.P0_out: adv.FloatVar = adv.System.define_variable(adv.FloatVar)
-        self.m_dot: adv.FloatVar = adv.System.define_variable(adv.FloatVar)
-
-        self.node_x: adv.FloatArrayVar = adv.System.define_variable(adv.FloatArrayVar)
-
-        self.T: adv.FloatArrayVar = adv.System.define_variable(adv.FloatArrayVar)
-        self.P: adv.FloatArrayVar = adv.System.define_variable(adv.FloatArrayVar)
-        self.u: adv.FloatArrayVar = adv.System.define_variable(adv.FloatArrayVar)
-        self.e: adv.FloatArrayVar = adv.System.define_variable(adv.FloatArrayVar)
-        self.E: adv.FloatArrayVar = adv.System.define_variable(adv.FloatArrayVar)
-
-        self.rho: adv.FloatArrayVar = adv.System.define_variable(adv.FloatArrayVar)
-        self.mu: adv.FloatArrayVar = adv.System.define_variable(adv.FloatArrayVar)
-        self.cp: adv.FloatArrayVar = adv.System.define_variable(adv.FloatArrayVar)
-        self.cv: adv.FloatArrayVar = adv.System.define_variable(adv.FloatArrayVar)
-        self.k: adv.FloatArrayVar = adv.System.define_variable(adv.FloatArrayVar)
-
-        self.Re: adv.FloatArrayVar = adv.System.define_variable(adv.FloatArrayVar)
-        self.Pr: adv.FloatArrayVar = adv.System.define_variable(adv.FloatArrayVar)
-
-        self.ff: adv.FloatArrayVar = adv.System.define_variable(adv.FloatArrayVar)
-        self.Nu: adv.FloatArrayVar = adv.System.define_variable(adv.FloatArrayVar)
-        self.htc: adv.FloatArrayVar = adv.System.define_variable(adv.FloatArrayVar)
-
-        self.T_wall: adv.FloatArrayVar = adv.System.define_variable(adv.FloatArrayVar)
-        self.Q_dot: adv.FloatArrayVar = adv.System.define_variable(adv.FloatArrayVar)
-
-class FlowChannel1DInitialConditions(adv.DataSet):
-    def __init__(self):
-        self.T0_out = 300
-        self.P0_out = 101325
-        self.m_dot = 0.001
-        
-        self.node_x = np.array([0, 1])
-
-        self.T = 300
-        self.P = 300
-        self.u = 1
-        self.e = 0
-        self.E = 0
-
-        self.rho = 0.1
-        self.mu = 1e-5
-        self.cp = 5000
-        self.cv = 3000
-        self.k = 0.1
-
-        self.Re = 220
-        self.Pr = 0.5
-
-        self.ff = 0.2909
-        self.Nu = 1
-        self.htc = 1.5
-
-        self.T_wall = 300
-        self.Q_dot = 0
 
 class FlowChannel1D(adv.Component):
+    """ Solves the 1D area averaged Navier-Stokes equations for internal flow.
 
-    # https://cardinal.cels.anl.gov/theory/thm.html
+    Parameters
+    ----------
+    name : str
+        Unique name to identify the component.
+
+    node_x : Iterable of Float
+        x locations of the nodes in [m]. Most flow variables (temperature,
+        pressure, velocity, etc) are solved at each of these locations.
+
+    A : float
+        Cross sectional flow area of the channel in [m^2]
+
+    P_wall : float
+        Wetted perimeter of the channel in [m^2].
+
+    eps : float
+        Wall roughness [m].
+
+    fluid : adv.Fluid
+        Material object representing the fluid properties in the channel.
+
+    Nu_func : function
+        Function used to calculate Nusselt number.
+
+    ff_func : function
+        Function used to calculate friction factor.
+
+    tol : float
+        Tolerance for residuals of Navier-Stokes equations at each node.
+
+    max_iter_per_node : int
+        Maximum number of non-linear iterations per node.
+    
+    """
 
     component_name = "FlowChannel1D"
 
-    def __init__(self, name: str, N: float, A: float, P_wall: float, L: float, eps: float, 
-                 fluid: adv.Fluid, Nu_func: function = adv.functions.dittus_boelter,
-                 ff_func: function = adv.functions.churchill, tol: float = 1e-6, 
+    class Inputs:
+        """ Inputs for FlowChannel1D Component.
+
+            Attributes
+            ----------
+            T0_in : adv.FloatVar
+                Stagnation temperature at inlet in [K].
+            
+            P0_in : adv.FloatVar
+                Stagnation pressure at inlet in [Pa].
+
+            m_dot : adv.FloatVar
+                Mass flow rate at inlet in [kg/s]
+            
+            Q_dot : adv.Mesh1DVar
+                Heat addition at each cell in [W]. Length is equal to number of
+                cells (number of nodes - 1).
+        """
+        def __init__(self):
+            self.T0_in = adv.FloatVar("T0_in", None)
+            self.P0_in = adv.FloatVar("P0_in", None)
+            self.m_dot = adv.FloatVar("m_dot", None)
+
+            self.Q_dot = adv.Mesh1DVar("Q_dot", 0)
+
+    class Outputs:
+        """ Outputs for FlowChannel1D Component.
+
+            Attributes
+            ----------
+            T0_out : adv.FloatVar
+                Stagnation temperature at outlet in [K].
+                Initialized to 300 [K].
+            
+            P0_out : adv.FloatVar
+                Stagnation pressure at outlet in [Pa].
+                Initialized to 101325 [Pa].
+
+            m_dot : adv.FloatVar
+                Mass flow rate at outlet in [kg/s]
+                Initialized to 0.001 [kg/s].
+            
+            T : adv.Mesh1DVar
+                Static temperature at each node in [K]. Length is equal to
+                number of nodes.
+                Initialized to 300 [K].
+
+            P : adv.Mesh1DVar
+                Static pressure at each node in [Pa]. Length is equal to number
+                of nodes.
+                Initialized to 101325 [Pa].
+
+            u : adv.Mesh1DVar
+                Flow velocity at each node in [m/s]. Length is equal to number
+                of nodes.
+                Initialized to 1 [m/s].
+
+            T_wall : adv.Mesh1DVar
+                Wall temperature at each cell in [K]. Length is equal to number
+                of cells (number of nodes - 1).
+                Initialized to 300 [K].
+        """
+
+        def __init__(self):
+            self.T0_out = adv.FloatVar("T0_out", 300)
+            self.P0_out = adv.FloatVar("P0_out", 101325)
+            self.m_dot = adv.FloatVar("m_dot", 0.001)
+
+            self.T = adv.Mesh1DVar("T", 300)
+            self.P = adv.Mesh1DVar("P", 101325)
+            self.u = adv.Mesh1DVar("u", 1)
+
+            self.T_wall = adv.Mesh1DVar("T_wall", 300)
+
+    def __init__(self, name: str, node_x: adv.np.ndarray, A: float, P_wall: float,  
+                 eps: float, fluid: adv.Fluid, Nu_func = adv.functions.dittus_boelter,
+                 ff_func = adv.functions.churchill, tol: float = 1e-6, 
                  max_iter_per_node: float = 100):
-        self.name = name
-        self.N = N
+        
+        self.register(name)
+
+        self.node_x = node_x
         self.A = A
         self.P_wall = P_wall
-        self.L = L
         self.eps = eps
         self.fluid = fluid
         self.Nu_func = Nu_func
@@ -93,24 +132,48 @@ class FlowChannel1D(adv.Component):
         self.tol = tol
         self.max_iter_per_node = max_iter_per_node
 
-        self.inputs = FlowChannel1DInputs()
-        self.outputs = FlowChannel1DOutputs()
-        self.initial = FlowChannel1DInitialConditions()
+        self.N = len(node_x) - 1
+        
+        self.inputs = FlowChannel1D.Inputs()
+        self.outputs = FlowChannel1D.Outputs()
+
+    def initialize(self):
+        """ Initialize all input and output variables. Mesh arrays are
+            calculated and passed to mesh variables.
+
+        """
+
+        self.cell_x = [(0.5*self.node_x[i+1] + 0.5*self.node_x[i]) for i in range(self.N)]
+
+        self.inputs.T0_in.initialize()
+        self.inputs.P0_in.initialize()
+        self.inputs.m_dot.initialize()
+
+        self.inputs.Q_dot.initialize(self.cell_x)
+
+        self.outputs.T0_out.initialize()
+        self.outputs.P0_out.initialize()
+        self.outputs.m_dot.initialize()
+        
+        self.outputs.T.initialize(self.node_x)
+        self.outputs.P.initialize(self.node_x)
+        self.outputs.u.initialize(self.node_x)
+        
+        self.outputs.T_wall.initialize(self.cell_x)
 
     def solve_steady_state(self):
+
         # Inputs
-        T0_in = self.inputs.T0_in.get()
-        P0_in = self.inputs.P0_in.get()
-        m_dot = self.inputs.m_dot.get()
+        T0_in = self.inputs.T0_in.value
+        P0_in = self.inputs.P0_in.value
+        m_dot = self.inputs.m_dot.value
 
-        T_wall = self.inputs.T_wall.get()
-        Q_dot = self.inputs.Q_dot.get()
+        Q_dot = self.inputs.Q_dot.value
 
-        # Setup
+        # Attributes
         N = self.N
         A = self.A
         P_wall = self.P_wall
-        L = self.L
         eps = self.eps
 
         fluid = self.fluid
@@ -119,49 +182,33 @@ class FlowChannel1D(adv.Component):
         tol = self.tol
         max_iter_per_node = self.max_iter_per_node
 
-        # Outputs
-        T = np.zeros(N+1)
-        P = np.zeros(N+1)
+        # Initialize output arrays
+        T = adv.np.zeros(N+1)       # Temperature                   [K]
+        P = adv.np.zeros(N+1)       # Pressure                      [Pa]
+        u = adv.np.zeros(N+1)       # Velocity                      [m/s]
 
-        rho = np.zeros(N+1)
-        mu = np.zeros(N+1)
-        cp = np.zeros(N+1)
-        cv = np.zeros(N+1)
-        k = np.zeros(N+1)
+        T_wall = adv.np.zeros(N)    # Wall Temperature              [K]
 
-        u = np.zeros(N+1)
-        e = np.zeros(N+1)
-        E = np.zeros(N+1)
-
-        Re = np.zeros(N+1)
-        Pr = np.zeros(N+1)
-
-        ff = np.zeros(N+1)
-        Nu = np.zeros(N+1)
-        htc = np.zeros(N+1)
-
-        # Determine heat transfer BC
-        if(T_wall is not None and Q_dot is not None):
-            #TODO update this using logger
-            raise Exception("Both T_wall and Q_dot can't be prescribed.")
-
-        if(T_wall is not None):
-            hx_type = "use_T_wall"
-            Q_dot = np.zeros(N)
-
-        elif(Q_dot is not None):
-            hx_type = "use_Q_dot"
-            T_wall = np.zeros(N)
-
-        else:
-            hx_type = "adiabatic"
-            Q_dot = np.zeros(N)
-            T_wall = np.zeros(N)
+        # Initialize post processing arrays
+        rho = adv.np.zeros(N+1)     # Mass Density                  [kg/m^3]
+        mu = adv.np.zeros(N+1)      # Dynamic Viscosity             [Pa-s]
+        cp = adv.np.zeros(N+1)      # Specific Heat (Const P)       [J/kg-K]
+        cv = adv.np.zeros(N+1)      # Specific Heat (Const V)       [J/kg-K]
+        k = adv.np.zeros(N+1)       # Thermal Conductivity          [W/m-K]
         
+        e = adv.np.zeros(N+1)       # Specific internal energy      [J/kg]
+        E = adv.np.zeros(N+1)       # Total specific internal energy[J/kg]
+
+        Re = adv.np.zeros(N+1)      # Reynolds Number               [Non-dimensional]
+        Pr = adv.np.zeros(N+1)      # Prandtl Number                [Non-dimensional]
+
+        ff = adv.np.zeros(N+1)      # Friction Factor               [Non-dimensional]
+        Nu = adv.np.zeros(N+1)      # Nusselt Number                [Non-dimensional]
+        htc = adv.np.zeros(N+1)     # Heat Transfer Coefficient     [W/m^2-K]
 
         # Calculate geometry from inputs
-        Dh = 4*A/P_wall
-        dx = L/N
+        Dh = 4*A/P_wall             # Hydraulic Diameter            [m^2]
+        dx = adv.np.array([self.node_x[i+1] - self.node_x[i] for i in range(self.N)])   # Length of each cell
 
         # Get Static Conditions
         T_in, P_in = adv.functions.stagnation_to_static_flow(T0_in, P0_in, m_dot, A, fluid, 
@@ -189,7 +236,7 @@ class FlowChannel1D(adv.Component):
         
         htc[0] = Nu[0] * k[0] / Dh
 
-        # MAIN LOOP
+        # MAIN SOLUTION LOOP
         for i in range(N):
             # Set initial guess for next node
             T[i+1] = T[i]
@@ -212,15 +259,16 @@ class FlowChannel1D(adv.Component):
             Nu[i+1] = Nu[i]
             htc[i+1] = htc[i]
 
-            # Non-linear loop for conservation equations
+        # Non-linear loop for conservation equations
             for _ in range(max_iter_per_node):
-                # Mass Conservation
+
+            # Mass Conservation
                 u_new = rho[i]*u[i]/rho[i+1]
                 mass_res = (u[i+1] - u_new)**2
 
                 u[i+1] = u_new
 
-                # Momentum Conservation
+            # Momentum Conservation
                 mu[i+1] = fluid.mu_from_T_P(T[i+1], P[i+1])
                 cp[i+1] = fluid.cp_from_T_P(T[i+1], P[i+1])
                 cv[i+1] = fluid.cv_from_T_P(T[i+1], P[i+1])
@@ -235,6 +283,8 @@ class FlowChannel1D(adv.Component):
                 u_avg = (u[i] + u[i+1]) / 2
                 ff_avg = (ff[i] + ff[i+1]) / 2
 
+                # C1 through C4 are just intermediate values to calculate
+                # momentum equation.
                 C1 = P[i]
                 C2 = rho[i]*u[i]**2
                 C3 = -rho[i+1]*u[i+1]**2
@@ -246,7 +296,7 @@ class FlowChannel1D(adv.Component):
 
                 P[i+1] = P_new
 
-                # Energy Equation
+            # Energy Equation
                 Nu[i+1] = Nu_func(Re[i+1], Pr[i+1])
                 
                 htc[i+1] = Nu[i+1] * k[i+1] / Dh
@@ -254,22 +304,10 @@ class FlowChannel1D(adv.Component):
                 htc_avg = (htc[i] + htc[i+1])/2
                 T_avg = (T[i] + T[i+1])/2
 
+                # C1 through C5 are just intermediate values to calculate
+                # energy equation.
                 C1 = 1/(u[i+1]*rho[i+1])
-
-                if(hx_type == "adiabatic"):
-                    C2 = 0
-
-                elif(hx_type == "use_T_wall"):
-                    C2 = dx*htc_avg*P_wall*(T_wall[i]-T_avg)/A
-                    Q_dot[i] = C2
-
-                elif(hx_type == "use_Q_dot"):
-                    C2 = Q_dot[i]
-                    T_wall[i] = Q_dot[i]*A/(dx*htc_avg*P_wall) + T_avg
-
-                else:
-                    raise Exception("Unknown hx_type")
-
+                C2 = Q_dot[i]
                 C3 = -u[i+1]*P[i+1]
                 C4 = u[i]*rho[i]*E[i]
                 C5 = u[i]*P[i]
@@ -277,47 +315,36 @@ class FlowChannel1D(adv.Component):
                 E_new = C1*(C2+C3+C4+C5)
                 energy_res = (E[i+1] - E_new)**2
 
+                # Back calculate temperature from internal energy.
                 E[i+1] = E_new
                 e[i+1] = E[i+1] - 0.5*u[i+1]**2
-
-                # Fluid Properties to get T and rho
 
                 cv_avg = 0.5*cv[i+1] + 0.5*cv[i]
                 T[i+1] = (e[i+1] - e[i])/cv_avg + T[i]
 
+            # Mass density from fluid properties calculation.
                 rho_new = fluid.rho_from_T_P(T[i+1], P[i+1])
                 rho_res = (rho[i+1] - rho_new)**2
                 rho[i+1] = rho_new
 
-                if(np.sqrt(mass_res + momentum_res + energy_res + rho_res) < tol):
+            # Check residual to see if this node has converged.
+                if(adv.np.sqrt(mass_res + momentum_res + energy_res + rho_res) < tol):
                     break
+
+            # Node has converged, so wall temperature can now be calculated.
+            T_wall[i] = Q_dot[i]*A/(dx*htc_avg*P_wall) + T_avg
 
         T0_out, P0_out = adv.functions.static_to_stagnation_flow(T[-1], P[-1], m_dot, A, fluid)
 
-        # Update output variables
-        self.outputs.T0_out.set(T0_out)
-        self.outputs.P0_out.set(P0_out)
-        self.outputs.m_dot.set(m_dot)
+        # Update outputs
+        self.outputs.T0_out.value = T0_out
+        self.outputs.P0_out.value = P0_out
+        self.outputs.m_dot.value = m_dot
 
-        self.outputs.node_x.set(np.linspace(0, L, N+1))
+        self.outputs.T.value = T
+        self.outputs.P.value = P
+        self.outputs.u.value = u
 
-        self.outputs.T.set(T)
-        self.outputs.P.set(P)
-        self.outputs.rho.set(rho)
-        self.outputs.u.set(u)
-        self.outputs.e.set(e)
-        self.outputs.E.set(E)
+        self.outputs.T_wall.value = T_wall
 
-        self.outputs.mu.set(mu)
-        self.outputs.cp.set(cp)
-        self.outputs.k.set(k)
-
-        self.outputs.Re.set(Re)
-        self.outputs.Pr.set(Pr)
-
-        self.outputs.ff.set(ff)
-        self.outputs.Nu.set(Nu)
-        self.outputs.htc.set(htc)
-        
-        self.outputs.T_wall.set(T_wall)
-        self.outputs.Q_dot.set(Q_dot)
+        # TODO Post values as well.

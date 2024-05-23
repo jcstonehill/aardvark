@@ -3,65 +3,84 @@ import aardvark.internal_api as adv
 from abc import ABC, abstractmethod
 from itertools import count
 
-import numpy as np
-
 class Variable(ABC):
+
     _id = count(0)
-
-    def __init__(self, init_val):
-        id = Variable._id
-        self.id = id
-        next(Variable._id)
-        
-        if(self.val_is_valid(init_val)):
-            self._val = init_val
-            self._prev_val = init_val
-
-    def set(self, val):
-        self._prev_val = self._val
-        self._val = val
-
-    def get(self):
-        return self._val
     
+    @property
+    def value(self) -> adv.np.ndarray:
+        return self._value
+    
+    @value.setter
+    def value(self, new_value: adv.np.ndarray):
+        self.prev_value = self._value
+
+        if(new_value is None):
+            self._value = None
+
+        else:
+            self._value = adv.np.array(new_value)
+
+    @property
+    def initial(self) -> adv.np.ndarray:
+        return self._initial
+    
+    @initial.setter
+    def initial(self, new_initial):
+        if(new_initial is None):
+            self._initial = None
+
+        else:
+            self._initial = adv.np.array(new_initial)
+
+    def __init__(self, name: str, initial: adv.np.ndarray = None):
+        self.name = name
+
+        self.initial: adv.np.ndarray = initial
+        self._value = None
+        self.prev_value = None
+
+        self.is_initialized = False
+
+    @abstractmethod
+    def initialize(self):
+        pass
+
     @abstractmethod
     def r2(self) -> float:
         pass
-
-    @abstractmethod
-    def val_is_valid(self, var) -> bool:
-        pass
-
-class NoneVar(Variable):
-    def __init__(self):
-        self._val = None
-
-    def set(self, val):
-        pass
-
-    def r2(self) -> float:
-        return 0
-
-    def val_is_valid(self, val) -> bool:
-        return True
 
 class FloatVar(Variable):
-    def r2(self) -> float:
-        return (self._val - self._prev_val)**2
-    
-    def val_is_valid(self, val) -> bool:
-        if(type(val) is not float):
-            raise Exception("Aardvark: Variable " + str(self._id) + ": Invalid type assigned. Expected float. Received " + str(type(val)) + ".")
-        
-        return True
-    
-class FloatArrayVar(Variable):
-    def r2(self) -> float:
+    def initialize(self):
+        if(not self.is_initialized):
+            self.value = self.initial
 
-        return sum((self._val - self._prev_val)**2)
-        
-    def val_is_valid(self, val) -> bool:
-        if(type(val) is not np.ndarray):
-            raise Exception("Aardvark: Variable " + str(self._id) + ": Invalid type assigned. Expected np.ndarray. Received " + str(type(val)) + ".")
-        
-        return True
+            self.is_initialized = True
+
+    def r2(self) -> float:
+        return (self.value - self.prev_value)**2
+
+class Mesh1DVar(Variable):
+    def initialize(self, x: adv.np.ndarray):
+        if(not self.is_initialized):
+            self.x = x
+
+            if(self.initial.size == 1):
+                self.value = adv.np.array(len(x)*[self.initial])
+
+            else:
+                self.value = self.initial
+
+            self.is_initialized = True
+
+    def r2(self) -> float:
+        return sum((self.value - self.prev_value)**2)
+    
+    def plot(self):
+        adv.plt.xlabel("Node X (m)")
+        adv.plt.ylabel(self.name)
+        adv.plt.grid(True)
+        adv.plt.tight_layout()
+
+        adv.plt.plot(self.x, self.value)
+        adv.plt.show()

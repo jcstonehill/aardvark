@@ -1,10 +1,30 @@
 import aardvark.internal_api as adv
 
 from decimal import Decimal
+import time
 
-import numpy as np
+def convert_computation_time(seconds, granularity = 5):
+    if(seconds < 1):
+        return "%-5f seconds" % (seconds)
 
+    intervals = (
+    ('weeks', 604800),  # 60 * 60 * 24 * 7
+    ('days', 86400),    # 60 * 60 * 24
+    ('hours', 3600),    # 60 * 60
+    ('minutes', 60),
+    ('seconds', 1),
+)
+    
+    result = []
 
+    for name, count in intervals:
+        value = seconds // count
+        if value:
+            seconds -= value * count
+            if value == 1:
+                name = name.rstrip('s')
+            result.append("{} {}".format(value, name))
+    return ', '.join(result[:granularity])
 
 def solve_components():
     for component in adv.components:
@@ -13,17 +33,24 @@ def solve_components():
 def residual() -> float:
     res = 0
 
-    for variable in adv.variables:
-        res += variable.r2()
-
-    res = np.sqrt(res)
+    for component in adv.components:
+        res += component.residual()
 
     return res
 
-def solve_steady_state(case_name: str, tol = 1e-6, max_iter = 1000):
-    adv.create_outputs_dir(case_name)
+def initialize_components():
+    for component in adv.components:
+        component.check_inputs()
+        component.initialize()
+        adv.Log.message("Component \"" + component._name + "\" was initialized.")
 
-    adv.Log.message("Steady state solver is starting.")
+def solve_steady_state(case_name: str, tol = 1e-6, max_iter = 1000):
+    adv.System.create_outputs_dir(case_name)
+
+    adv.Log.message("Initializing components...")
+    initialize_components()
+
+    adv.Log.message("Starting steady state solution loop.")
 
     # Initial Iteration
     solve_components()
@@ -34,9 +61,25 @@ def solve_steady_state(case_name: str, tol = 1e-6, max_iter = 1000):
     adv.Log.message("     %-9s     %-12s" % ("Iteration", "Residual"))
     adv.Log.message("     %-9s     %-12E" % ("Initial", Decimal(res)))
 
-    for i in range(10):
-        adv.Log.message("     %-9i     %-12E" % (10 ** (i/2), Decimal(20 ** (i/2))))
+    start_time = time.time()
 
+    i = 0
+    while(True):
+        i += 1
 
+        solve_components()
+        res = residual()
 
-    
+        adv.Log.message("     %-9i     %-12E" % (i, Decimal(res)))
+
+        if(res <= tol):
+            adv.Log.message("Converged in " + str(i) + " iterations.")
+            break
+
+        if(i >= max_iter):
+            adv.Log.message("Max iterations reached without convergence.")
+            break
+
+    end_time = time.time()
+
+    adv.Log.message("Computation Time was " + convert_computation_time(end_time-start_time))
