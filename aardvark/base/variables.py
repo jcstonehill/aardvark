@@ -82,5 +82,5 @@ class Mesh1DVar(Variable):
         adv.plt.grid(True)
         adv.plt.tight_layout()
 
-        adv.plt.plot(self.x, self.value)
+        adv.plt.plot(self.x, self.value, 'o')
         adv.plt.show()
