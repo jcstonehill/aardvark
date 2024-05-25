@@ -11,6 +11,7 @@ from aardvark.base.fluid import Fluid
 from aardvark.base.variables import Variable
 from aardvark.base.variables import FloatVar
 from aardvark.base.variables import Mesh1DVar
+from aardvark.base.variables import FlowStateVar
 
 # Functions
 from aardvark import functions

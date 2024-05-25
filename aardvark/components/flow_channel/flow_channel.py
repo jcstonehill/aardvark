@@ -46,23 +46,15 @@ class FlowChannel1D(adv.Component):
 
             Attributes
             ----------
-            T0_in : adv.FloatVar
-                Stagnation temperature at inlet in [K].
-            
-            P0_in : adv.FloatVar
-                Stagnation pressure at inlet in [Pa].
-
-            m_dot : adv.FloatVar
-                Mass flow rate at inlet in [kg/s]
+            inlet : adv.FlowStateVar
+                Flow state at inlet (T0 [K], P0 [Pa], m_dot [kg/s])
             
             Q_dot : adv.Mesh1DVar
                 Heat addition at each cell in [W]. Length is equal to number of
                 cells (number of nodes - 1).
         """
         def __init__(self):
-            self.T0_in = adv.FloatVar("T0_in", None)
-            self.P0_in = adv.FloatVar("P0_in", None)
-            self.m_dot = adv.FloatVar("m_dot", None)
+            self.inlet = adv.FlowStateVar("inlet", None, None, None)
 
             self.Q_dot = adv.Mesh1DVar("Q_dot", 0)
 
@@ -71,17 +63,9 @@ class FlowChannel1D(adv.Component):
 
             Attributes
             ----------
-            T0_out : adv.FloatVar
-                Stagnation temperature at outlet in [K].
-                Initialized to 300 [K].
-            
-            P0_out : adv.FloatVar
-                Stagnation pressure at outlet in [Pa].
-                Initialized to 101325 [Pa].
-
-            m_dot : adv.FloatVar
-                Mass flow rate at outlet in [kg/s]
-                Initialized to 0.001 [kg/s].
+            outlet : adv.FlowStateVar
+                Flow state at outlet (T0 [K], P0 [Pa], m_dot [kg/s]).
+                Initialized to (300, 101325, 0.001).
             
             T : adv.Mesh1DVar
                 Static temperature at each node in [K]. Length is equal to
@@ -105,14 +89,11 @@ class FlowChannel1D(adv.Component):
         """
 
         def __init__(self):
-            self.T0_out = adv.FloatVar("T0_out", 300)
-            self.P0_out = adv.FloatVar("P0_out", 101325)
-            self.m_dot = adv.FloatVar("m_dot", 0.001)
+            self.outlet = adv.FlowStateVar("outlet", 300, 101325, 0.001)
 
             self.T = adv.Mesh1DVar("T", 300)
             self.P = adv.Mesh1DVar("P", 101325)
             self.u = adv.Mesh1DVar("u", 1)
-            self.htc = adv.Mesh1DVar("htc", 0)
 
             self.T_wall = adv.Mesh1DVar("T_wall", 300)
 
@@ -146,29 +127,23 @@ class FlowChannel1D(adv.Component):
 
         self.cell_x = [(0.5*self.node_x[i+1] + 0.5*self.node_x[i]) for i in range(self.N)]
 
-        self.inputs.T0_in.initialize()
-        self.inputs.P0_in.initialize()
-        self.inputs.m_dot.initialize()
-
+        self.inputs.inlet.initialize()
         self.inputs.Q_dot.initialize(self.cell_x)
 
-        self.outputs.T0_out.initialize()
-        self.outputs.P0_out.initialize()
-        self.outputs.m_dot.initialize()
+        self.outputs.outlet.initialize()
         
         self.outputs.T.initialize(self.node_x)
         self.outputs.P.initialize(self.node_x)
         self.outputs.u.initialize(self.node_x)
-        self.outputs.htc.initialize(self.node_x)
         
         self.outputs.T_wall.initialize(self.cell_x)
 
     def solve_steady_state(self):
 
         # Inputs
-        T0_in = self.inputs.T0_in.value
-        P0_in = self.inputs.P0_in.value
-        m_dot = self.inputs.m_dot.value
+        T0_in = self.inputs.inlet.T0
+        P0_in = self.inputs.inlet.P0
+        m_dot = self.inputs.inlet.m_dot
 
         Q_dot = self.inputs.Q_dot.value
 
@@ -339,17 +314,14 @@ class FlowChannel1D(adv.Component):
         T0_out, P0_out = adv.functions.static_to_stagnation_flow(T[-1], P[-1], m_dot, A, fluid)
 
         # Update outputs
-        self.outputs.T0_out.value = T0_out
-        self.outputs.P0_out.value = P0_out
-        self.outputs.m_dot.value = m_dot
+        self.outputs.outlet.T0 = T0_out
+        self.outputs.outlet.P0 = P0_out
+        self.outputs.outlet.m_dot = m_dot
 
         self.outputs.T.value = T
         self.outputs.P.value = P
         self.outputs.u.value = u
-        self.outputs.htc.value = htc
 
         self.outputs.T_wall.value = T_wall
-
-        print(T_wall)
 
         # TODO Post values as well.
