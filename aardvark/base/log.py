@@ -1,6 +1,3 @@
-#import aardvark.internal_api as adv
-
-
 start_message = """
                                                 #######                               
                                          #####################                        
