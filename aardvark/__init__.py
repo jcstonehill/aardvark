@@ -11,7 +11,10 @@ from aardvark.components.heat_transfer_from_wall.heat_transfer_from_wall import 
 from aardvark import functions
 
 # Materials
-from aardvark.materials.fluids.constant import ConstantFluid
+from aardvark.materials import fluids
+
+# Mesh
+from aardvark.mesh.mesh_1d import Mesh1D
 
 # Solvers
 from aardvark.base.steady_state_solver import solve_steady_state
