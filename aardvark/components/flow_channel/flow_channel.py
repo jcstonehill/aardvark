@@ -49,14 +49,26 @@ class FlowChannel1D(adv.Component):
             inlet : adv.FlowStateVar
                 Flow state at inlet (T0 [K], P0 [Pa], m_dot [kg/s])
             
-            Q_dot : adv.Mesh1DVar
-                Heat addition at each cell in [W]. Length is equal to number of
-                cells (number of nodes - 1).
+            Q_dot : adv.FloatVar
+                Total heat added to flow channel in [W]. Only used if hx_type =
+                "use_Q_dot".
+
+            Q_dot_shape : adv.Mesh1DVar
+                Relative fraction of Q_dot added to each cell. This array is
+                normalized internally so the sum of the array is equal to 1.
+                Only used if hx_type = "use_Q_dot".
+
+            T_wall : adv.Mesh1DVar
+                Wall temperature in [K] used in heat transfer calculation. Only
+                used if hx_type = "use_T_wall".
         """
+
         def __init__(self):
             self.inlet = adv.FlowStateVar("inlet", None)
 
-            self.Q_dot = adv.Mesh1DVar("Q_dot", 0, "cell")
+            self.Q_dot = adv.FloatVar("Q_dot", 0)
+            self.Q_dot_shape = adv.Mesh1DVar("Q_dot_shape", 1, "cell")
+
             self.T_wall = adv.Mesh1DVar("T_wall", 300, "cell")
 
     class Outputs:
@@ -83,6 +95,13 @@ class FlowChannel1D(adv.Component):
                 of nodes.
                 Initialized to 1 [m/s].
 
+            Q_dot : adv.FloatVar
+                Total heat added to flow channel in [W]. 
+
+            Q_dot_shape : adv.Mesh1DVar
+                Relative fraction of Q_dot added to each cell. This array is
+                normalized internally so the sum of the array is equal to 1.
+
             T_wall : adv.Mesh1DVar
                 Wall temperature at each cell in [K]. Length is equal to number
                 of cells (number of nodes - 1).
@@ -96,7 +115,8 @@ class FlowChannel1D(adv.Component):
             self.P = adv.Mesh1DVar("P", 101325, "node")
             self.u = adv.Mesh1DVar("u", 1, "node")
 
-            self.Q_dot = adv.Mesh1DVar("Q_dot", 0, "cell")
+            self.Q_dot = adv.FloatVar("Q_dot", 0)
+            self.Q_dot_shape = adv.Mesh1DVar("Q_dot_shape", 1, "cell")
             self.T_wall = adv.Mesh1DVar("T_wall", 300, "cell")
 
     def __init__(self, name: str, mesh: adv.Mesh1D, A: float, P_wall: float,  
@@ -131,8 +151,10 @@ class FlowChannel1D(adv.Component):
 
         if(self.hx_type == "use_T_wall"):
             self.inputs.T_wall.setup(self.mesh)
+
         elif(self.hx_type == "use_Q_dot"):
-            self.inputs.Q_dot.setup(self.mesh)
+            self.inputs.Q_dot.setup()
+            self.inputs.Q_dot_shape.setup(self.mesh)
         
         self.outputs.outlet.setup()
         
@@ -140,8 +162,9 @@ class FlowChannel1D(adv.Component):
         self.outputs.P.setup(self.mesh)
         self.outputs.u.setup(self.mesh)
         
+        self.outputs.Q_dot.setup()
+        self.outputs.Q_dot_shape.setup(self.mesh)
         self.outputs.T_wall.setup(self.mesh)
-        self.outputs.Q_dot.setup(self.mesh)
 
     def solve_steady_state(self):
 
@@ -150,15 +173,18 @@ class FlowChannel1D(adv.Component):
 
         if(self.hx_type == "adiabatic"):
             T_wall = adv.np.zeros(self.mesh.cells.size)
-            Q_dot = adv.np.zeros(self.mesh.cells.size)
+            Q_dot = 0
+            Q_dot_shape = adv.np.ones(self.mesh.cells.size) / self.mesh.cells.size
 
         elif(self.hx_type == "use_Q_dot"):
             T_wall = adv.np.zeros(self.mesh.cells.size)
             Q_dot = self.inputs.Q_dot.value
+            Q_dot_shape = self.inputs.Q_dot_shape.value / adv.np.sum(self.inputs.Q_dot_shape.value)
 
         elif(self.hx_type == "use_T_wall"):
             T_wall = self.inputs.T_wall.value
-            Q_dot = adv.np.zeros(self.mesh.cells.size)
+            Q_dot = 0
+            Q_dot_shape = adv.np.zeros(self.mesh.cells.size)
 
         # Attributes
         A = self.A
@@ -181,8 +207,7 @@ class FlowChannel1D(adv.Component):
         mu = adv.np.zeros(self.mesh.nodes.size)     # Dynamic Viscosity                [Pa-s]
         cp = adv.np.zeros(self.mesh.nodes.size)     # Specific Heat (Const P)          [J/kg-K]
         k = adv.np.zeros(self.mesh.nodes.size)      # Thermal Conductivity             [W/m-K]
-        
-        h = adv.np.zeros(self.mesh.nodes.size)      # Specific enthalpy                 [J/kg]
+
         e = adv.np.zeros(self.mesh.nodes.size)      # Specific internal energy         [J/kg]
         E = adv.np.zeros(self.mesh.nodes.size)      # Total specific internal energy   [J/kg]
 
@@ -199,6 +224,8 @@ class FlowChannel1D(adv.Component):
         # Get Static Conditions
         T_in, P_in = adv.functions.stagnation_to_static_flow(T0_in, P0_in, m_dot, A, fluid, 
                                                              max_iter_per_node, tol)
+
+        print(T_in, P_in)
 
         # Add inlet values to variable arrays
         T[0] = T_in
@@ -244,7 +271,10 @@ class FlowChannel1D(adv.Component):
             htc[i+1] = htc[i]
 
         # Non-linear loop for conservation equations
-            for _ in range(max_iter_per_node):
+            iter_no = 0
+            while(True):
+
+                iter_no += 1
 
             # Mass Conservation
                 u_new = rho[i]*u[i]/rho[i+1]
@@ -278,7 +308,7 @@ class FlowChannel1D(adv.Component):
                 momentum_res = (P[i+1] - P_new)**2
 
                 P[i+1] = P_new
-
+                
             # Energy Equation
                 Nu[i+1] = Nu_func(Re[i+1], Pr[i+1])
                 
@@ -289,18 +319,19 @@ class FlowChannel1D(adv.Component):
 
                 if(self.hx_type == "adiabatic"):
                     T_wall[i] = T_avg
-                    Q_dot[i] = 0
 
                 elif(self.hx_type == "use_T_wall"):
-                    Q_dot[i] = self.mesh.dx[i]*htc_avg*self.P_wall*(T_wall[i] - T_avg)/self.A
+                    local_Q_dot = self.mesh.dx[i]*htc_avg*self.P_wall*(T_wall[i] - T_avg)/self.A
+                    Q_dot += local_Q_dot
+                    Q_dot_shape[i] = local_Q_dot
 
                 elif(self.hx_type == "use_Q_dot"):
-                    T_wall[i] = Q_dot[i]*A/(htc_avg*P_wall*self.mesh.dx[i]) + T_avg
+                    T_wall[i] = Q_dot*Q_dot_shape[i]*A/(htc_avg*P_wall*self.mesh.dx[i]) + T_avg
 
                 # C1 through C5 are just intermediate values to calculate
                 # energy equation.
                 C1 = 1/(u[i+1]*rho[i+1])
-                C2 = Q_dot[i]
+                C2 = Q_dot*Q_dot_shape[i]
                 C3 = -u[i+1]*P[i+1]
                 C4 = u[i]*rho[i]*E[i]
                 C5 = u[i]*P[i]
@@ -320,8 +351,11 @@ class FlowChannel1D(adv.Component):
                 rho[i+1] = rho_new
 
             # Check residual to see if this node has converged.
-                if(adv.np.max([mass_res, momentum_res, energy_res, rho_res]) < tol):
+                if(adv.np.max(adv.np.sqrt([mass_res, momentum_res, energy_res, rho_res])) < tol):
                     break
+
+                if(iter_no > max_iter_per_node):
+                    self.log_error("Node did not converge after " + str(max_iter_per_node) + " iterations.")
  
         T0_out, P0_out = adv.functions.static_to_stagnation_flow(T[-1], P[-1], m_dot, A, fluid)
 
@@ -332,7 +366,10 @@ class FlowChannel1D(adv.Component):
         self.outputs.P.value = P
         self.outputs.u.value = u
 
-        self.outputs.T_wall.value = T_wall
         self.outputs.Q_dot.value = Q_dot
+        self.outputs.Q_dot_shape.value = Q_dot_shape
+        self.outputs.T_wall.value = T_wall
+        
+        
 
         # TODO Post values as well.
