@@ -1,28 +1,32 @@
-import aardvark.internal_api as adv
+from aardvark.base.log import Log
+from aardvark.mesh.mesh_1d import Mesh1D
 
 from abc import ABC, abstractmethod
 from itertools import count
+
+import numpy as np
+import matplotlib.pyplot as plt
 
 class Variable(ABC):
 
     _id = count(0)
     
     @property
-    def value(self) -> adv.np.ndarray:
+    def value(self) -> np.ndarray:
         return self._value
     
     @value.setter
-    def value(self, new_value: adv.np.ndarray):
+    def value(self, new_value: np.ndarray):
         self.prev_value = self._value
 
         if(new_value is None):
             self._value = None
 
         else:
-            self._value = adv.np.array(new_value)
+            self._value = np.array(new_value)
 
     @property
-    def initial(self) -> adv.np.ndarray:
+    def initial(self) -> np.ndarray:
         return self._initial
     
     @initial.setter
@@ -31,19 +35,19 @@ class Variable(ABC):
             self._initial = None
 
         else:
-            self._initial = adv.np.array(new_initial)
+            self._initial = np.array(new_initial)
 
-    def __init__(self, name: str, initial: adv.np.ndarray = None):
+    def __init__(self, name: str, initial: np.ndarray = None):
         self.name = name
 
-        self.initial: adv.np.ndarray = initial
+        self.initial: np.ndarray = initial
         self._value = None
         self.prev_value = None
 
-        self.is_initialized = False
+        self.is_setup = False
 
     @abstractmethod
-    def initialize(self):
+    def setup(self):
         pass
 
     @abstractmethod
@@ -51,155 +55,84 @@ class Variable(ABC):
         pass
 
 class FloatVar(Variable):
-    def initialize(self):
-        if(not self.is_initialized):
+    def setup(self):
+        if(not self.is_setup):
             self.value = self.initial
 
-            self.is_initialized = True
+            self.is_setup = True
 
     def r2(self) -> float:
         return (self.value - self.prev_value)**2
 
 class Mesh1DVar(Variable):
-    def initialize(self, x: adv.np.ndarray):
-        if(not self.is_initialized):
-            self.x = x
-
-            if(self.initial.size == 1):
-                self.value = adv.np.array(len(x)*[self.initial])
-
-            else:
-                self.value = self.initial
-
-            self.is_initialized = True
-
-    def r2(self) -> float:
-        return adv.np.sum((self.value - self.prev_value)**2)
-    
-    def plot(self):
-        adv.plt.xlabel("Node X (m)")
-        adv.plt.ylabel(self.name)
-        adv.plt.grid(True)
-        adv.plt.tight_layout()
-
-        adv.plt.plot(self.x, self.value, 'o')
-        adv.plt.show()
-
-class FlowStateVar(Variable):
-
-    # T0 
-    @property
-    def T0_value(self) -> adv.np.ndarray:
-        return self._T0_value
-    
-    @T0_value.setter
-    def value(self, new_value: adv.np.ndarray):
-        self.T0_prev_value = self._T0_value
-
-        if(new_value is None):
-            self._T0_value = None
-
-        else:
-            self._T0_value = adv.np.array(new_value)
-
-    @property
-    def T0_initial(self) -> adv.np.ndarray:
-        return self._T0_initial
-    
-    @T0_initial.setter
-    def T0_initial(self, new_initial):
-        if(new_initial is None):
-            self._T0_initial = None
-
-        else:
-            self._T0_initial = adv.np.array(new_initial)
-
-    # P0 
-    @property
-    def P0_value(self) -> adv.np.ndarray:
-        return self._P0_value
-    
-    @P0_value.setter
-    def value(self, new_value: adv.np.ndarray):
-        self.P0_prev_value = self._P0_value
-
-        if(new_value is None):
-            self._P0_value = None
-
-        else:
-            self._P0_value = adv.np.array(new_value)
-
-    @property
-    def P0_initial(self) -> adv.np.ndarray:
-        return self._P0_initial
-    
-    @P0_initial.setter
-    def P0_initial(self, new_initial):
-        if(new_initial is None):
-            self._P0_initial = None
-
-        else:
-            self._P0_initial = adv.np.array(new_initial)
-
-    # m_dot 
-    @property
-    def m_dot_value(self) -> adv.np.ndarray:
-        return self._m_dot_value
-    
-    @m_dot_value.setter
-    def value(self, new_value: adv.np.ndarray):
-        self.m_dot_prev_value = self._m_dot_value
-
-        if(new_value is None):
-            self._m_dot_value = None
-
-        else:
-            self._m_dot_value = adv.np.array(new_value)
-
-    @property
-    def m_dot_initial(self) -> adv.np.ndarray:
-        return self._m_dot_initial
-    
-    @m_dot_initial.setter
-    def m_dot_initial(self, new_initial):
-        if(new_initial is None):
-            self._m_dot_initial = None
-
-        else:
-            self._m_dot_initial = adv.np.array(new_initial)
-
-    def __init__(self, name: str, T0_initial: adv.np.ndarray = None, 
-                 P0_initial: adv.np.ndarray = None, m_dot_initial: adv.np.ndarray = None):
+    def __init__(self, name: str, initial: np.ndarray = None, var_type: str = "node"):
         self.name = name
 
-        self.T0_initial: adv.np.ndarray = T0_initial
-        self.P0_initial: adv.np.ndarray = P0_initial
-        self.m_dot_initial: adv.np.ndarray = m_dot_initial
+        self.initial: np.ndarray = initial
+        self._value = None
+        self.prev_value = None
 
-        self._T0_value = None
-        self._P0_value = None
-        self._m_dot_value = None
+        self.var_type = var_type
 
-        self.T0_prev_value = None
-        self.P0_prev_value = None
-        self.m_dot_prev_value = None
-        
-        self.is_initialized = False
+        self.is_setup = False
 
-    def set_initial(self, T0_initial: adv.np.ndarray = None, 
-                 P0_initial: adv.np.ndarray = None, m_dot_initial: adv.np.ndarray = None):
-        
-        self.T0_initial = T0_initial
-        self.P0_initial = P0_initial
-        self.m_dot_initial = m_dot_initial
-        
-    def initialize(self):
-        if(not self.is_initialized):
-            self.T0 = self.T0_initial
-            self.P0 = self.P0_initial
-            self.m_dot = self.m_dot_initial
+    def setup(self, mesh: Mesh1D):
+        if(not self.is_setup):
+            self.mesh = mesh
 
-            self.is_initialized = True
+            if(self.var_type != "node" and self.var_type != "cell"):
+                Log.error(self.name + " (Mesh1DVar) :: Unrecognized var_type: \"" + self.var_type + "\". Acceptable var_type entries: \"node\" or \"cell\".")
+            
+            if(self.initial.size == 1):
+                if(self.var_type == "node"):
+                    self.value = np.array(self.mesh.nodes.size*[self.initial])
+                elif(self.var_type == "cell"):
+                    self.value = np.array(self.mesh.cells.size*[self.initial])
+
+            else:
+                if(self.var_type == "node"):
+                    if(self.initial.size != self.mesh.nodes.size):
+                        Log.error(self.name + " (Mesh1DVar) :: Initial is an invalid size. initial.size = " + str(self.initial.size) + " and mesh.nodes.size = " + str(self.mesh.nodes.size) + ".")
+                elif(self.var_type == "cell"):
+                    if(self.initial.size != self.mesh.cells.size):
+                        Log.error(self.name + " (Mesh1DVar) :: Initial is an invalid size. initial.size = " + str(self.initial.size) + " and mesh.cells.size = " + str(self.mesh.cells.size) + ".")
+                
+                self.value = self.initial
+
+            self.is_setup = True
 
     def r2(self) -> float:
-        return adv.np.sum((self.value - self.prev_value)**2)
+        return np.sum((self.value - self.prev_value)**2)
+    
+    def plot(self):
+        if(self.var_type == "node"):
+            x_label = "Node X (m)"
+            x = self.mesh.nodes
+            
+        elif(self.var_type == "cell"):
+            x_label = "Cell X (m)"
+            x = self.mesh.cells
+
+        plt.xlabel(x_label)
+        plt.ylabel(self.name)
+
+        plt.ylim(0, np.max(self.value))
+
+        plt.grid(True)
+        plt.tight_layout()
+
+        plt.plot(x, self.value, 'o')
+        plt.show()
+
+class FlowStateVar(Variable):
+    def setup(self):
+        if(not self.is_setup):
+            if(len(self.initial != 3)):
+                Log.error
+
+            self.value = self.initial
+
+            self.is_setup = True
+
+    def r2(self) -> float:
+        return np.sum((self.value - self.prev_value)**2)

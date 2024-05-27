@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 
 # Base Classes
 from aardvark.base.component import Component
-from aardvark.base.component import DataSet
 from aardvark.base.fluid import Fluid
 
 # Variables
@@ -18,6 +17,9 @@ from aardvark import functions
 
 # Materials
 from aardvark.materials import fluids
+
+# Mesh
+from aardvark.mesh.mesh_1d import Mesh1D
 
 # System
 from aardvark.base.system import components
