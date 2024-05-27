@@ -38,17 +38,17 @@ def residual() -> float:
 
     return res
 
-def initialize_components():
+def setup_components():
     for component in adv.components:
         component.check_inputs()
-        component.initialize()
+        component.setup()
         adv.Log.message("Component \"" + component._name + "\" was initialized.")
 
 def solve_steady_state(case_name: str, tol = 1e-6, max_iter = 1000):
     adv.System.create_outputs_dir(case_name)
 
-    adv.Log.message("Initializing components...")
-    initialize_components()
+    adv.Log.message("Setting up components...")
+    setup_components()
 
     adv.Log.message("Starting steady state solution loop.")
 
@@ -79,6 +79,8 @@ def solve_steady_state(case_name: str, tol = 1e-6, max_iter = 1000):
         if(i >= max_iter):
             adv.Log.message("Max iterations reached without convergence.")
             break
+
+    adv.Log.line_break()
 
     end_time = time.time()
 

@@ -1,13 +1,7 @@
 import aardvark.internal_api as adv
 
 from abc import ABC, abstractmethod
-from itertools import count
 
-import numpy as np
-
-
-class DataSet(ABC):
-    pass
 
 class Component(ABC):
     component_name = "Component"
@@ -38,7 +32,7 @@ class Component(ABC):
                 self.log_error("Input variable \"" + variable.name + "\" initial value is None.")
 
     @abstractmethod
-    def initialize(self):
+    def setup(self):
         pass
     
     @abstractmethod
@@ -56,4 +50,4 @@ class Component(ABC):
         for variable in outputs.values():
             r2 += variable.r2()
 
-        return np.sqrt(r2)
+        return adv.np.sqrt(r2)
