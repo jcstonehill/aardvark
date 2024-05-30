@@ -122,7 +122,7 @@ class FlowChannel1D(adv.Component):
     def __init__(self, name: str, mesh: adv.Mesh1D, A: float, P_wall: float,  
                  eps: float, fluid: adv.Fluid, hx_type: str = "adiabatic", Nu_func = adv.functions.dittus_boelter,
                  ff_func = adv.functions.churchill, tol: float = 1e-6, 
-                 max_iter_per_node: float = 100):
+                 max_iter_per_node: float = 1000):
         
         self.register(name)
 
@@ -225,8 +225,6 @@ class FlowChannel1D(adv.Component):
         T_in, P_in = adv.functions.stagnation_to_static_flow(T0_in, P0_in, m_dot, A, fluid, 
                                                              max_iter_per_node, tol)
 
-        print(T_in, P_in)
-
         # Add inlet values to variable arrays
         T[0] = T_in
         P[0] = P_in
@@ -250,6 +248,7 @@ class FlowChannel1D(adv.Component):
 
         # MAIN SOLUTION LOOP
         for i in range(self.mesh.cells.size):
+
             # Set initial guess for next node
             T[i+1] = T[i]
             P[i+1] = P[i]
@@ -273,8 +272,49 @@ class FlowChannel1D(adv.Component):
         # Non-linear loop for conservation equations
             iter_no = 0
             while(True):
-
                 iter_no += 1
+
+            # Energy Equation
+                Nu[i+1] = Nu_func(Re[i+1], Pr[i+1])
+                
+                htc[i+1] = Nu[i+1] * k[i+1] / Dh
+
+                htc_avg = (htc[i] + htc[i+1])/2
+                T_avg = (T[i] + T[i+1])/2
+
+                if(self.hx_type == "adiabatic"):
+                    T_wall[i] = T_avg
+
+                elif(self.hx_type == "use_T_wall"):
+                    local_Q_dot = htc_avg*self.mesh.dx[i]*self.P_wall*(T_wall[i] - T_avg)
+                    Q_dot += local_Q_dot
+                    Q_dot_shape[i] = local_Q_dot
+
+                elif(self.hx_type == "use_Q_dot"):
+                    local_Q_dot = Q_dot*Q_dot_shape[i]
+                    T_wall[i] = Q_dot*Q_dot_shape[i]/(htc_avg*self.mesh.dx[i]*P_wall) + T_avg
+
+                # C1 through C5 are just intermediate values to calculate
+                # energy equation.
+                C1 = 1/(u[i+1]*rho[i+1])
+                C2 = local_Q_dot/A
+                C3 = -u[i+1]*P[i+1]
+                C4 = u[i]*rho[i]*E[i]
+                C5 = u[i]*P[i]
+
+                E_new = C1*(C2+C3+C4+C5)
+                energy_res = (E[i+1] - E_new)**2
+
+                E[i+1] = E_new
+                e[i+1] = E[i+1] - 0.5*u[i+1]**2
+
+                # Use equation of state to get temperature.
+                T[i+1] = fluid.T_from_e_P(e[i+1], P[i+1])
+
+            # Mass density from fluid properties calculation.
+                rho_new = fluid.rho_from_T_P(T[i+1], P[i+1])
+                rho_res = (rho[i+1] - rho_new)**2
+                rho[i+1] = rho_new
 
             # Mass Conservation
                 u_new = rho[i]*u[i]/rho[i+1]
@@ -308,55 +348,14 @@ class FlowChannel1D(adv.Component):
                 momentum_res = (P[i+1] - P_new)**2
 
                 P[i+1] = P_new
-                
-            # Energy Equation
-                Nu[i+1] = Nu_func(Re[i+1], Pr[i+1])
-                
-                htc[i+1] = Nu[i+1] * k[i+1] / Dh
-
-                htc_avg = (htc[i] + htc[i+1])/2
-                T_avg = (T[i] + T[i+1])/2
-
-                if(self.hx_type == "adiabatic"):
-                    T_wall[i] = T_avg
-
-                elif(self.hx_type == "use_T_wall"):
-                    local_Q_dot = self.mesh.dx[i]*htc_avg*self.P_wall*(T_wall[i] - T_avg)/self.A
-                    Q_dot += local_Q_dot
-                    Q_dot_shape[i] = local_Q_dot
-
-                elif(self.hx_type == "use_Q_dot"):
-                    T_wall[i] = Q_dot*Q_dot_shape[i]*A/(htc_avg*P_wall*self.mesh.dx[i]) + T_avg
-
-                # C1 through C5 are just intermediate values to calculate
-                # energy equation.
-                C1 = 1/(u[i+1]*rho[i+1])
-                C2 = Q_dot*Q_dot_shape[i]
-                C3 = -u[i+1]*P[i+1]
-                C4 = u[i]*rho[i]*E[i]
-                C5 = u[i]*P[i]
-
-                E_new = C1*(C2+C3+C4+C5)
-                energy_res = (E[i+1] - E_new)**2
-
-                E[i+1] = E_new
-                e[i+1] = E[i+1] - 0.5*u[i+1]**2
-
-                # Use equation of state to get temperature.
-                T[i+1] = fluid.T_from_e_P(e[i+1], P[i+1])
-
-            # Mass density from fluid properties calculation.
-                rho_new = fluid.rho_from_T_P(T[i+1], P[i+1])
-                rho_res = (rho[i+1] - rho_new)**2
-                rho[i+1] = rho_new
 
             # Check residual to see if this node has converged.
                 if(adv.np.max(adv.np.sqrt([mass_res, momentum_res, energy_res, rho_res])) < tol):
                     break
 
                 if(iter_no > max_iter_per_node):
-                    self.log_error("Node did not converge after " + str(max_iter_per_node) + " iterations.")
- 
+                    self.log_error("Node " + str(i) + " did not converge after " + str(max_iter_per_node) + " iterations.")
+        
         T0_out, P0_out = adv.functions.static_to_stagnation_flow(T[-1], P[-1], m_dot, A, fluid)
 
         # Update outputs
