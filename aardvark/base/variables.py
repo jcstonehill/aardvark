@@ -116,7 +116,7 @@ class Mesh1DVar(Variable):
         plt.xlabel(x_label)
         plt.ylabel(self.name)
 
-        plt.ylim(0, np.max(self.value))
+        plt.ylim(0, 1.05*np.max(self.value))
 
         plt.grid(True)
         plt.tight_layout()
