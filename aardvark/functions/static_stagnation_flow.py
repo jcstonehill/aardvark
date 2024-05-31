@@ -1,9 +1,9 @@
-import aardvark.internal_api as adv
+from aardvark.base.fluid import Fluid
 
 import numpy as np
 
 def stagnation_to_static_flow(T0: float, P0: float, m_dot: float, A: float, 
-              fluid: adv.Fluid, max_iter: int = 100, tol: float = 1e-6) -> tuple:
+              fluid: Fluid, max_iter: int = 100, tol: float = 1e-6) -> tuple:
     # Initial guess at T and P
     T = T0
     P = P0
@@ -28,7 +28,7 @@ def stagnation_to_static_flow(T0: float, P0: float, m_dot: float, A: float,
     # TODO replace with logging system
     raise Exception("StagnationToStaticFlow not converged")
     
-def static_to_stagnation_flow(T: float, P: float, m_dot: float, A: float, fluid: adv.Fluid) -> tuple:
+def static_to_stagnation_flow(T: float, P: float, m_dot: float, A: float, fluid: Fluid) -> tuple:
     rho = fluid.rho_from_T_P(T, P)
     cp = fluid.cp_from_T_P(T, P)
 

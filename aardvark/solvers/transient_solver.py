@@ -1,4 +1,5 @@
-import aardvark.internal_api as adv
+from aardvark.base.system import System
+from aardvark.base.log import Log
 
 from decimal import Decimal
 import time
@@ -27,7 +28,7 @@ def convert_computation_time(seconds, granularity = 5):
     return ', '.join(result[:granularity])
 
 class TransientSolver:
-    def __init__(self, case_name = "Case", system: adv.System = None, 
+    def __init__(self, case_name = "Case", system: System = None, 
                  duration: float = 1, dt: float = 1, tol = 1e-6, max_iter = 100):
         self.case_name = case_name
         self.system = system
@@ -37,19 +38,19 @@ class TransientSolver:
         self.max_iter = max_iter
 
     def solve(self):
-        adv.System.create_outputs_dir(self.case_name)
+        System.create_outputs_dir(self.case_name)
 
-        adv.Log.message("Setting up system...")
+        Log.message("Setting up system...")
         self.system.setup()
 
-        adv.Log.message("Starting solution loop.")
+        Log.message("Starting solution loop.")
 
         start_time = time.time()
 
-        adv.Log.line_break()
+        Log.line_break()
         self.system.solve(self.dt, self.tol, self.max_iter)
-        adv.Log.line_break()
+        Log.line_break()
 
         end_time = time.time()
 
-        adv.Log.message("Computation Time was " + convert_computation_time(end_time-start_time))
+        Log.message("Computation Time was " + convert_computation_time(end_time-start_time))
