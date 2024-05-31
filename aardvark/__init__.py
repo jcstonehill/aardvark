@@ -1,6 +1,9 @@
 # Modules
 import numpy as np
 
+# Base
+from aardvark.base.system import System
+
 # Builders
 
 # Components
@@ -17,6 +20,6 @@ from aardvark.materials import fluids
 from aardvark.mesh.mesh_1d import Mesh1D
 
 # Solvers
-from aardvark.base.steady_state_solver import solve_steady_state
+from aardvark.solvers.transient_solver import TransientSolver
 
 # System

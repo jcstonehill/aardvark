@@ -12,16 +12,12 @@ fc1.inputs.inlet.initial = (372.1, 6e6, 0.0147/19)
 fc1.inputs.Q_dot.initial = (0.4e6)/19
 fc1.inputs.Q_dot_shape.initial = adv.np.sin(adv.np.linspace(0, 0.89, 99)*adv.np.pi/0.89)
 
-# fc1.inputs.Q_dot_shape.setup(fc1.mesh)
-# fc1.inputs.Q_dot_shape.plot()
-# Component 2
-# fc2 = adv.FlowChannel1D("fc2", adv.Mesh1D(0, 1, 100), 7.2548e-3, 0.4108273402, 0, he)
+system = adv.System()
+system.add_component(fc1)
 
-# fc2.inputs.inlet = fc2.outputs.outlet
+solver = adv.TransientSolver(system=system)
 
-# fc2.inputs.Q_dot.initial = 1e5
-
-adv.solve_steady_state("my_case")
+solver.solve()
 
 # fc2.outputs.T.plot()
 fc1.outputs.T.plot()

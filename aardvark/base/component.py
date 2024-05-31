@@ -1,6 +1,9 @@
-import aardvark.internal_api as adv
+from aardvark.base.variables import Variable
+from aardvark.base.log import Log
 
 from abc import ABC, abstractmethod
+
+import numpy as np
 
 
 class Component(ABC):
@@ -9,26 +12,18 @@ class Component(ABC):
     def register(self, name: str):
         self._name = name + " (" + self.component_name + ")"
 
-        for component in adv.components:
-            if(component._name == name):
-                adv.Log.error("Tried to create a component named \"" + name + "\" but a component with that name already exists.")
-
-        self._name = name
-        adv.components.append(self)
-
     def log_message(self, message: str):
-        adv.Log.message(self._name +" :: " + message)
+        Log.message(self._name +" :: " + message)
 
     def log_error(self, message: str):
-        adv.Log.error(self._name +" :: " + message)
+        Log.error(self._name +" :: " + message)
 
     def check_inputs(self):
         inputs: dict = vars(self.inputs)
 
-        variable: adv.Variable
+        variable: Variable
         for variable in inputs.values():
             if(variable.initial is None):
-                
                 self.log_error("Input variable \"" + variable.name + "\" initial value is None.")
 
     @abstractmethod
@@ -36,7 +31,7 @@ class Component(ABC):
         pass
     
     @abstractmethod
-    def solve_steady_state(self):
+    def solve(self, dt: float):
         """TODO
         """
         pass
@@ -46,8 +41,8 @@ class Component(ABC):
 
         outputs: dict = vars(self.outputs)
 
-        variable: adv.Variable
+        variable: Variable
         for variable in outputs.values():
             r2 += variable.r2()
 
-        return adv.np.sqrt(r2)
+        return np.sqrt(r2)

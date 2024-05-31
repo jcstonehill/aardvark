@@ -22,7 +22,6 @@ from aardvark.materials import fluids
 from aardvark.mesh.mesh_1d import Mesh1D
 
 # System
-from aardvark.base.system import components
 from aardvark.base.system import System
 
 # Log

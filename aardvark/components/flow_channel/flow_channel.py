@@ -166,7 +166,7 @@ class FlowChannel1D(adv.Component):
         self.outputs.Q_dot_shape.setup(self.mesh)
         self.outputs.T_wall.setup(self.mesh)
 
-    def solve_steady_state(self):
+    def solve(self, dt: float):
 
         # Inputs
         T0_in, P0_in, m_dot = self.inputs.inlet.value
