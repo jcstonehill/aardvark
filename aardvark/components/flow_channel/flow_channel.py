@@ -1,7 +1,9 @@
-import aardvark.internal_api as adv
+import aardvark.component_api as adv
 
 
 class FlowChannel1D(adv.Component):
+    componet_type = "FlowChannel1D"
+
     """ Solves the 1D area averaged Navier-Stokes equations for internal flow.
 
     Parameters
@@ -63,13 +65,13 @@ class FlowChannel1D(adv.Component):
                 used if hx_type = "use_T_wall".
         """
 
-        def __init__(self):
-            self.inlet = adv.FlowStateVar("inlet", None)
+        def __init__(self, component_name: str):
+            self.inlet = adv.FlowStateVar(component_name, "inlet", "SI", None)
 
-            self.Q_dot = adv.FloatVar("Q_dot", 0)
-            self.Q_dot_shape = adv.Mesh1DVar("Q_dot_shape", 1, "cell")
+            self.Q_dot = adv.FloatVar(component_name, "Q_dot", "W", 0)
+            self.Q_dot_shape = adv.Mesh1DVar(component_name, "Q_dot_shape", "Unitless", 1, "cell")
 
-            self.T_wall = adv.Mesh1DVar("T_wall", 300, "cell")
+            self.T_wall = adv.Mesh1DVar(component_name, "T_wall", "Unitless", 300, "cell")
 
     class Outputs:
         """ Outputs for FlowChannel1D Component.
@@ -90,11 +92,6 @@ class FlowChannel1D(adv.Component):
                 of nodes.
                 Initialized to 101325 [Pa].
 
-            u : adv.Mesh1DVar
-                Flow velocity at each node in [m/s]. Length is equal to number
-                of nodes.
-                Initialized to 1 [m/s].
-
             Q_dot : adv.FloatVar
                 Total heat added to flow channel in [W]. 
 
@@ -108,22 +105,20 @@ class FlowChannel1D(adv.Component):
                 Initialized to 300 [K].
         """
 
-        def __init__(self):
-            self.outlet = adv.FlowStateVar("outlet", (300, 101325, 0.001))
+        def __init__(self, component_name: str):
+            self.outlet = adv.FlowStateVar(component_name, "outlet", "SI", (300, 101325, 0.001))
 
-            self.T = adv.Mesh1DVar("T", 300, "node")
-            self.P = adv.Mesh1DVar("P", 101325, "node")
-            self.u = adv.Mesh1DVar("u", 1, "node")
+            self.T = adv.Mesh1DVar(component_name, "T", "K", 300, "node")
+            self.P = adv.Mesh1DVar(component_name, "P", "Pa", 101325, "node")
 
-            self.Q_dot = adv.FloatVar("Q_dot", 0)
-            self.Q_dot_shape = adv.Mesh1DVar("Q_dot_shape", 1, "cell")
-            self.T_wall = adv.Mesh1DVar("T_wall", 300, "cell")
+            self.Q_dot = adv.FloatVar(component_name, "Q_dot", "W", 0)
+            self.Q_dot_shape = adv.Mesh1DVar(component_name, "Q_dot_shape", "Unitless", 1, "cell")
+            self.T_wall = adv.Mesh1DVar(component_name, "T_wall", "K", 300, "cell")
 
     def __init__(self, name: str, mesh: adv.Mesh1D, A: float, P_wall: float,  
                  eps: float, fluid: adv.Fluid, hx_type: str = "adiabatic", Nu_func = adv.functions.dittus_boelter,
                  ff_func = adv.functions.churchill, tol: float = 1e-6, 
                  max_iter_per_node: float = 1000):
-        
         self.register(name)
 
         self.mesh: adv.Mesh1D = mesh
@@ -138,33 +133,42 @@ class FlowChannel1D(adv.Component):
         self.tol = adv.np.array(tol)
         self.max_iter_per_node = adv.np.array(max_iter_per_node)
 
-        self.inputs = FlowChannel1D.Inputs()
-        self.outputs = FlowChannel1D.Outputs()
+        self.inputs = FlowChannel1D.Inputs(name)
+        self.outputs = FlowChannel1D.Outputs(name)
 
     def setup(self):
         """ Setup all input and output variables. Mesh arrays are
             calculated and passed to mesh variables.
 
         """
-
-        self.inputs.inlet.setup()
-
+        # Add meshes to variables
         if(self.hx_type == "use_T_wall"):
-            self.inputs.T_wall.setup(self.mesh)
+            self.inputs.T_wall.add_mesh(self.mesh)
 
         elif(self.hx_type == "use_Q_dot"):
+            self.inputs.Q_dot_shape.add_mesh(self.mesh)
+
+        self.outputs.T.add_mesh(self.mesh)
+        self.outputs.P.add_mesh(self.mesh)
+        self.outputs.Q_dot_shape.add_mesh(self.mesh)
+        self.outputs.T_wall.add_mesh(self.mesh)
+
+        # Setup variables
+        self.inputs.inlet.setup()
+    
+        if(self.hx_type =="use_T_wall"):
+            self.inputs.T_wall.setup()
+        
+        elif(self.hx_type == "use_Q_dot"):
             self.inputs.Q_dot.setup()
-            self.inputs.Q_dot_shape.setup(self.mesh)
-        
+            self.inputs.Q_dot_shape.setup()
+
         self.outputs.outlet.setup()
-        
-        self.outputs.T.setup(self.mesh)
-        self.outputs.P.setup(self.mesh)
-        self.outputs.u.setup(self.mesh)
-        
+        self.outputs.T.setup()
+        self.outputs.P.setup()
         self.outputs.Q_dot.setup()
-        self.outputs.Q_dot_shape.setup(self.mesh)
-        self.outputs.T_wall.setup(self.mesh)
+        self.outputs.Q_dot_shape.setup()
+        self.outputs.T_wall.setup()
 
     def solve(self, dt: float):
 
@@ -363,7 +367,6 @@ class FlowChannel1D(adv.Component):
 
         self.outputs.T.value = T
         self.outputs.P.value = P
-        self.outputs.u.value = u
 
         self.outputs.Q_dot.value = Q_dot
         self.outputs.Q_dot_shape.value = Q_dot_shape
