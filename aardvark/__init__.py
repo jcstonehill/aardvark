@@ -1,3 +1,5 @@
+import numpy as np
+
 # Base
 from aardvark.base.system import System
 

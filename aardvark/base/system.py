@@ -1,4 +1,5 @@
 from aardvark.base.component import Component
+from aardvark.base.variables import Variable
 from aardvark.base.log import Log
 
 import os
@@ -84,10 +85,9 @@ class System:
             
     def setup(self):
         for component in self._components:
-            component.check_inputs()
             component.setup()
 
-            Log.message("Component \"" + component._name + "\" was initialized.")
+            Log.message("Component \"" + component._name + "\" was setup.")
 
     def residual(self) -> float:
         res = 0

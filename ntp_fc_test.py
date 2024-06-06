@@ -15,7 +15,7 @@ fc1.inputs.Q_dot_shape.initial = adv.np.sin(adv.np.linspace(0, 0.89, 99)*adv.np.
 system = adv.System()
 system.add_component(fc1)
 
-solver = adv.TransientSolver(system=system)
+solver = adv.TransientSolver("my_case", system)
 
 solver.solve()
 

@@ -7,24 +7,22 @@ import numpy as np
 
 
 class Component(ABC):
-    component_name = "Component"
+    component_type = "Component"
+
+    def __init__(self, name: str):
+        self._name = name
+
+        self.inputs = None
+        self.outputs = None
 
     def register(self, name: str):
-        self._name = name + " (" + self.component_name + ")"
+        self._name = name
 
     def log_message(self, message: str):
-        Log.message(self._name +" :: " + message)
+        Log.message(self._name + " (" + self.component_type + ") :: " + message)
 
     def log_error(self, message: str):
-        Log.error(self._name +" :: " + message)
-
-    def check_inputs(self):
-        inputs: dict = vars(self.inputs)
-
-        variable: Variable
-        for variable in inputs.values():
-            if(variable.initial is None):
-                self.log_error("Input variable \"" + variable.name + "\" initial value is None.")
+        Log.error(self._name + " (" + self.component_type + ") :: " + message)
 
     @abstractmethod
     def setup(self):

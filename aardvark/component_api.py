@@ -1,3 +1,5 @@
+import numpy as np
+
 # Base Classes
 from aardvark.base.component import Component
 from aardvark.base.fluid import Fluid
