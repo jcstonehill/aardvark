@@ -65,13 +65,7 @@ class FlowChannel1D(adv.Component):
                 used if hx_type = "use_T_wall".
         """
 
-        def __init__(self, component_name: str):
-            self.inlet = adv.FlowStateVar(component_name, "inlet", "SI", None)
-
-            self.Q_dot = adv.FloatVar(component_name, "Q_dot", "W", 0)
-            self.Q_dot_shape = adv.Mesh1DVar(component_name, "Q_dot_shape", "Unitless", 1, "cell")
-
-            self.T_wall = adv.Mesh1DVar(component_name, "T_wall", "Unitless", 300, "cell")
+        pass
 
     class Outputs:
         """ Outputs for FlowChannel1D Component.
@@ -105,75 +99,44 @@ class FlowChannel1D(adv.Component):
                 Initialized to 300 [K].
         """
 
-        def __init__(self, component_name: str):
-            self.outlet = adv.FlowStateVar(component_name, "outlet", "SI", (300, 101325, 0.001))
-
-            self.T = adv.Mesh1DVar(component_name, "T", "K", 300, "node")
-            self.P = adv.Mesh1DVar(component_name, "P", "Pa", 101325, "node")
-
-            self.Q_dot = adv.FloatVar(component_name, "Q_dot", "W", 0)
-            self.Q_dot_shape = adv.Mesh1DVar(component_name, "Q_dot_shape", "Unitless", 1, "cell")
-            self.T_wall = adv.Mesh1DVar(component_name, "T_wall", "K", 300, "cell")
+        pass
 
     def __init__(self, name: str, mesh: adv.Mesh1D, A: float, P_wall: float,  
-                 eps: float, fluid: adv.Fluid, hx_type: str = "adiabatic", Nu_func = adv.functions.dittus_boelter,
-                 ff_func = adv.functions.churchill, tol: float = 1e-6, 
+                 eps: float, fluid: adv.Fluid, hx_type: str = "adiabatic", tol: float = 1e-6, 
                  max_iter_per_node: float = 1000):
-        self.register(name)
+        self.initialize(name)
 
         self.mesh: adv.Mesh1D = mesh
+
         self.A = adv.np.array(A)
         self.P_wall = adv.np.array(P_wall)
         self.eps = adv.np.array(eps)
+
         self.fluid = fluid
         self.hx_type = hx_type
 
-        self.Nu_func = Nu_func
-        self.ff_func = ff_func
         self.tol = adv.np.array(tol)
         self.max_iter_per_node = adv.np.array(max_iter_per_node)
 
-        self.inputs = FlowChannel1D.Inputs(name)
-        self.outputs = FlowChannel1D.Outputs(name)
+    def declare_variables(self):
+        self.inlet = self.add_flow_state_var("inlet", "SI")
+        self.outlet = self.add_flow_state_var("outlet", "SI")
+
+        self.T = self.add_mesh1d_var("T", "K", "node")
+        self.P = self.add_mesh1d_var("P", "Pa", "node")
+
+        self.Q_dot = self.add_float_var("Q_dot", "W")
+        self.Q_dot_shape = self.add_mesh1d_var("Q_dot_shape", "Unitless", "cell")
+        self.T_wall = self.add_mesh1d_var("T_wall", "K", "cell")
 
     def setup(self):
-        """ Setup all input and output variables. Mesh arrays are
-            calculated and passed to mesh variables.
-
-        """
-        # Add meshes to variables
-        if(self.hx_type == "use_T_wall"):
-            self.inputs.T_wall.add_mesh(self.mesh)
-
-        elif(self.hx_type == "use_Q_dot"):
-            self.inputs.Q_dot_shape.add_mesh(self.mesh)
-
-        self.outputs.T.add_mesh(self.mesh)
-        self.outputs.P.add_mesh(self.mesh)
-        self.outputs.Q_dot_shape.add_mesh(self.mesh)
-        self.outputs.T_wall.add_mesh(self.mesh)
-
-        # Setup variables
-        self.inputs.inlet.setup()
-    
-        if(self.hx_type =="use_T_wall"):
-            self.inputs.T_wall.setup()
-        
-        elif(self.hx_type == "use_Q_dot"):
-            self.inputs.Q_dot.setup()
-            self.inputs.Q_dot_shape.setup()
-
-        self.outputs.outlet.setup()
-        self.outputs.T.setup()
-        self.outputs.P.setup()
-        self.outputs.Q_dot.setup()
-        self.outputs.Q_dot_shape.setup()
-        self.outputs.T_wall.setup()
+        pass
 
     def solve(self, dt: float):
 
         # Inputs
-        T0_in, P0_in, m_dot = self.inputs.inlet.value
+        print(self.inlet.value)
+        T0_in, P0_in, m_dot = self.inlet.value
 
         if(self.hx_type == "adiabatic"):
             T_wall = adv.np.zeros(self.mesh.cells.size)
@@ -182,11 +145,11 @@ class FlowChannel1D(adv.Component):
 
         elif(self.hx_type == "use_Q_dot"):
             T_wall = adv.np.zeros(self.mesh.cells.size)
-            Q_dot = self.inputs.Q_dot.value
-            Q_dot_shape = self.inputs.Q_dot_shape.value / adv.np.sum(self.inputs.Q_dot_shape.value)
+            Q_dot = self.Q_dot.value
+            Q_dot_shape = self.Q_dot_shape.value / adv.np.sum(self.Q_dot_shape.value)
 
         elif(self.hx_type == "use_T_wall"):
-            T_wall = self.inputs.T_wall.value
+            T_wall = self.T_wall.value
             Q_dot = 0
             Q_dot_shape = adv.np.zeros(self.mesh.cells.size)
 
@@ -196,8 +159,6 @@ class FlowChannel1D(adv.Component):
         eps = self.eps
 
         fluid = self.fluid
-        Nu_func = self.Nu_func
-        ff_func = self.ff_func
         tol = self.tol
         max_iter_per_node = self.max_iter_per_node
 
@@ -245,8 +206,8 @@ class FlowChannel1D(adv.Component):
         Re[0] = adv.functions.reynolds(rho[0], u[0], Dh, mu[0])
         Pr[0] = adv.functions.prandtl(cp[0], mu[0], k[0])
 
-        ff[0] = ff_func(eps, Dh, Re[0])
-        Nu[0] = Nu_func(Re[0], Pr[0])
+        ff[0] = adv.functions.churchill(eps, Dh, Re[0])
+        Nu[0] = adv.functions.dittus_boelter(Re[0], Pr[0])
         
         htc[0] = Nu[0] * k[0] / Dh
 
@@ -279,7 +240,7 @@ class FlowChannel1D(adv.Component):
                 iter_no += 1
 
             # Energy Equation
-                Nu[i+1] = Nu_func(Re[i+1], Pr[i+1])
+                Nu[i+1] = adv.functions.dittus_boelter(Re[i+1], Pr[i+1])
                 
                 htc[i+1] = Nu[i+1] * k[i+1] / Dh
 
@@ -334,7 +295,7 @@ class FlowChannel1D(adv.Component):
                 Re[i+1] = adv.functions.reynolds(rho[i+1], u[i+1], Dh, mu[i+1])
                 Pr[i+1] = adv.functions.prandtl(cp[i+1], mu[i+1], k[i+1])
                 
-                ff[i+1] = ff_func(eps, Dh, Re[i+1])
+                ff[i+1] = adv.functions.churchill(eps, Dh, Re[i+1])
                 
                 rho_avg = (rho[i] + rho[i+1])/2
                 u_avg = (u[i] + u[i+1]) / 2
@@ -363,14 +324,14 @@ class FlowChannel1D(adv.Component):
         T0_out, P0_out = adv.functions.static_to_stagnation_flow(T[-1], P[-1], m_dot, A, fluid)
 
         # Update outputs
-        self.outputs.outlet.value = (T0_out, P0_out, m_dot)
+        self.outlet.value = (T0_out, P0_out, m_dot)
 
-        self.outputs.T.value = T
-        self.outputs.P.value = P
+        self.T.value = T
+        self.P.value = P
 
-        self.outputs.Q_dot.value = Q_dot
-        self.outputs.Q_dot_shape.value = Q_dot_shape
-        self.outputs.T_wall.value = T_wall
+        self.Q_dot.value = Q_dot
+        self.Q_dot_shape.value = Q_dot_shape
+        self.T_wall.value = T_wall
         
         
 

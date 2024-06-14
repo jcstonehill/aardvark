@@ -1,5 +1,6 @@
 from aardvark.base.component import Component
 from aardvark.base.variables import Variable
+from aardvark.base.fluid import Fluid
 from aardvark.base.log import Log
 
 import os
@@ -48,17 +49,28 @@ class System:
     
     def __init__(self):
         self._components: list[Component] = []
+        self._connections: list[tuple] = []
 
     def add_component(self, component: Component):
+        for _component in self._components:
+            if _component.name == component.name:
+                Log.error("Tried to add \"" + component.name + "\" to system but a component with that name already exists.")
+
         self._components.append(component)
 
-    def solve_components(self, dt: float):
+    def update_connections_for(self, component: Component):
+        source: Variable
+        target: Variable
+
+        for source, target in self._connections:
+            if target.component_name == component.name:
+                target.update_from(source)
+
+    def solve(self, dt: float, tol: float, max_iter: float):
+        # Do initial solve.
         for component in self._components:
             component.solve(dt)
 
-    def solve(self, dt: float, tol: float, max_iter: float):
-
-        self.solve_components(dt)
         res = self.residual()
 
         Log.line_break()
@@ -72,7 +84,10 @@ class System:
                 Log.message("Max iterations reached without convergence.")
                 break
 
-            self.solve_components(dt)
+            for component in self._components:
+                self.update_connections_for(component)
+                component.solve(dt)
+
             res = self.residual()
 
             Log.message("     %-9i     %-12E" % (i, Decimal(res)))
@@ -82,12 +97,17 @@ class System:
                 break
 
             i += 1
-            
+    
+    def march(self):
+        for component in self._components:
+            component.march()
+
     def setup(self):
         for component in self._components:
+            component.check_initials()
             component.setup()
 
-            Log.message("Component \"" + component._name + "\" was setup.")
+            component.log_message("Setup complete.")
 
     def residual(self) -> float:
         res = 0
@@ -96,3 +116,13 @@ class System:
             res += component.residual()
 
         return res
+
+    def connect(self, source: Variable, target: Variable):
+        if(type(source) is not type(target)):
+            Log.error("Tried to connect " + source.component_name + " :: " + source.name + " to " + target.component_name + " :: " + target.name + " but they are not the same type.")
+        
+        for _source, _target in self._connections:
+            if(_target is target):
+                Log.error(target.component_name + " :: " + target.name + " is already connected to a source.")
+
+        self._connections.append((source, target))

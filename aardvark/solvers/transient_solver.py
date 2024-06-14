@@ -48,6 +48,7 @@ class TransientSolver:
         start_time = time.time()
 
         Log.line_break()
+        self.system.march()
         self.system.solve(self.dt, self.tol, self.max_iter)
         Log.line_break()
 

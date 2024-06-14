@@ -4,6 +4,7 @@ import numpy as np
 
 def stagnation_to_static_flow(T0: float, P0: float, m_dot: float, A: float, 
               fluid: Fluid, max_iter: int = 100, tol: float = 1e-6) -> tuple:
+    
     # Initial guess at T and P
     T = T0
     P = P0
