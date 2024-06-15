@@ -2,18 +2,21 @@ import aardvark.component_api as adv
 
 
 class FlowChannel1D(adv.Component):
-    componet_type = "FlowChannel1D"
+    component_type = "FlowChannel1D"
 
     """ Solves the 1D area averaged Navier-Stokes equations for internal flow.
 
-    Parameters
+    Friction factor is calculated using the Churchill friction factor
+    correlation. Nusselt number is calculated using the Dittus-Boelter Nusselt
+    number correlation.
+
+    Attributes
     ----------
     name : str
         Unique name to identify the component.
 
-    node_x : Iterable of Float
-        x locations of the nodes in [m]. Most flow variables (temperature,
-        pressure, velocity, etc) are solved at each of these locations.
+    mesh : Mesh1D
+        Mesh to define problem space.
 
     A : float
         Cross sectional flow area of the channel in [m^2]
@@ -27,79 +30,40 @@ class FlowChannel1D(adv.Component):
     fluid : adv.Fluid
         Material object representing the fluid properties in the channel.
 
-    Nu_func : function
-        Function used to calculate Nusselt number.
-
-    ff_func : function
-        Function used to calculate friction factor.
-
     tol : float
         Tolerance for residuals of Navier-Stokes equations at each node.
 
     max_iter_per_node : int
         Maximum number of non-linear iterations per node.
     
+
+    Variables
+    ----------
+    inlet : adv.FlowStateVar
+        Flow state at inlet (T0 [K], P0 [Pa], m_dot [kg/s])
+
+    outlet : adv.FlowStateVar
+        Flow state at outlet (T0 [K], P0 [Pa], m_dot [kg/s]).
+
+    T : adv.Mesh1DVar
+        Static temperature at each node in [K]. Length is equal to
+        number of nodes.
+
+    P : adv.Mesh1DVar
+        Static pressure at each node in [Pa]. Length is equal to number
+        of nodes.
+
+    Q_dot : adv.FloatVar
+        Total heat added to flow channel in [W].
+
+    Q_dot_shape : adv.Mesh1DVar
+        Relative fraction of Q_dot added to each cell. This array is
+        normalized internally so the sum of the array is equal to 1.
+
+    T_wall : adv.Mesh1DVar
+        Wall temperature in [K].
+
     """
-
-    component_name = "FlowChannel1D"
-
-    class Inputs:
-        """ Inputs for FlowChannel1D Component.
-
-            Attributes
-            ----------
-            inlet : adv.FlowStateVar
-                Flow state at inlet (T0 [K], P0 [Pa], m_dot [kg/s])
-            
-            Q_dot : adv.FloatVar
-                Total heat added to flow channel in [W]. Only used if hx_type =
-                "use_Q_dot".
-
-            Q_dot_shape : adv.Mesh1DVar
-                Relative fraction of Q_dot added to each cell. This array is
-                normalized internally so the sum of the array is equal to 1.
-                Only used if hx_type = "use_Q_dot".
-
-            T_wall : adv.Mesh1DVar
-                Wall temperature in [K] used in heat transfer calculation. Only
-                used if hx_type = "use_T_wall".
-        """
-
-        pass
-
-    class Outputs:
-        """ Outputs for FlowChannel1D Component.
-
-            Attributes
-            ----------
-            outlet : adv.FlowStateVar
-                Flow state at outlet (T0 [K], P0 [Pa], m_dot [kg/s]).
-                Initialized to (300, 101325, 0.001).
-            
-            T : adv.Mesh1DVar
-                Static temperature at each node in [K]. Length is equal to
-                number of nodes.
-                Initialized to 300 [K].
-
-            P : adv.Mesh1DVar
-                Static pressure at each node in [Pa]. Length is equal to number
-                of nodes.
-                Initialized to 101325 [Pa].
-
-            Q_dot : adv.FloatVar
-                Total heat added to flow channel in [W]. 
-
-            Q_dot_shape : adv.Mesh1DVar
-                Relative fraction of Q_dot added to each cell. This array is
-                normalized internally so the sum of the array is equal to 1.
-
-            T_wall : adv.Mesh1DVar
-                Wall temperature at each cell in [K]. Length is equal to number
-                of cells (number of nodes - 1).
-                Initialized to 300 [K].
-        """
-
-        pass
 
     def __init__(self, name: str, mesh: adv.Mesh1D, A: float, P_wall: float,  
                  eps: float, fluid: adv.Fluid, hx_type: str = "adiabatic", tol: float = 1e-6, 
@@ -119,15 +83,15 @@ class FlowChannel1D(adv.Component):
         self.max_iter_per_node = adv.np.array(max_iter_per_node)
 
     def declare_variables(self):
-        self.inlet = self.add_flow_state_var("inlet", "SI")
-        self.outlet = self.add_flow_state_var("outlet", "SI")
+        self.inlet = self.add_flow_state_var("inlet", "SI")                         # Inlet Flow State ([K], [Pa], [kg/s])
+        self.outlet = self.add_flow_state_var("outlet", "SI")                       # Outlet Flow State ([K], [Pa], [kg/s])
 
-        self.T = self.add_mesh1d_var("T", "K", "node")
-        self.P = self.add_mesh1d_var("P", "Pa", "node")
+        self.T = self.add_mesh1d_var("T", "K", "node")                              # Static Temperature [K]
+        self.P = self.add_mesh1d_var("P", "Pa", "node")                             # Static Pressure [Pa]
 
-        self.Q_dot = self.add_float_var("Q_dot", "W")
-        self.Q_dot_shape = self.add_mesh1d_var("Q_dot_shape", "Unitless", "cell")
-        self.T_wall = self.add_mesh1d_var("T_wall", "K", "cell")
+        self.Q_dot = self.add_float_var("Q_dot", "W")                               # Total Heat [W]
+        self.Q_dot_shape = self.add_mesh1d_var("Q_dot_shape", "Unitless", "cell")   # Heat Shape [Unitless]
+        self.T_wall = self.add_mesh1d_var("T_wall", "K", "cell")                    # Wall Temperature [K]
 
     def setup(self):
         pass
@@ -135,7 +99,6 @@ class FlowChannel1D(adv.Component):
     def solve(self, dt: float):
 
         # Inputs
-        print(self.inlet.value)
         T0_in, P0_in, m_dot = self.inlet.value
 
         if(self.hx_type == "adiabatic"):
