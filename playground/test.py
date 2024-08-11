@@ -26,12 +26,10 @@ geom.root_universe = universe
 
 tally = openmc.Tally(name = "fission")
 tally.scores = ["fission"]
-mesh = openmc.RegularMesh()
-mesh.dimension = (1, 1, 10)
-mesh.lower_left = (-1, -1, -50)
-mesh.upper_right = (1, 1, 50)
-filter = openmc.MeshFilter(mesh)
-tally.filters = [filter]
+tallies.append(tally)
+
+tally = openmc.Tally(name = "delayed-nu-fission")
+tally.scores = ["delayed-nu-fission"]
 tallies.append(tally)
 
 settings.batches = 100
