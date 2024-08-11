@@ -1,2 +1,9 @@
 output/
 *.pyc
+geometry.xml
+materials.xml
+settings.xml
+statepoint.100.h5
+summary.h5
+tallies.out
+tallies.xml
