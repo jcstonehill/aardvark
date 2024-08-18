@@ -25,9 +25,17 @@ zrc.add_element("Zr", 0.5, "ao")
 zrc.add_element("C", 0.5, "ao")
 
 
+# Insulator
+porous_zrc = openmc.Material(name = "Porous ZrC")
+porous_zrc.set_density("g/cm3", 3.365)
+
+porous_zrc.add_element("Zr", 0.5, "ao")
+porous_zrc.add_element("C", 0.5, "ao")
+
+
 # ZrH
 zrh = openmc.Material(name = "ZrH")
-zrh.set_density("g/cm3", 5.587, "ao")
+zrh.set_density("g/cm3", 5.587)
 
 zrh.add_element("Zr", 0.33333, "ao")
 zrh.add_element("H", 0.66667, "ao")
@@ -49,11 +57,11 @@ ss.add_element("Ni", 0.11, "wo")
 ss.add_element("Fe", 0.71, "wo")
 
 
-# Gaseous Hydrogen
-h = openmc.Material()
-h.set_density("g/cm3", 0.00008)
+# Propellant
+prop_hydrogen = openmc.Material()
+prop_hydrogen.set_density("g/cm3", 0.00008)
 
-h.add_element("H", 1.0, "ao")
+prop_hydrogen.add_element("H", 1.0, "ao")
 
 
 # Aluminum
@@ -120,7 +128,25 @@ cd_actuator.add_element("Fe", 0.278, "wo")
 cd_actuator.add_element("Cu", 0.1477, "wo")
 
 
+# Inconel 718
+inconel718 = openmc.Material(name = "Inconel 718")
+inconel718.set_density("g/cm3", 8.22)
+
+inconel718.add_element("Cr", 0.190, "wo")
+inconel718.add_element("Ni", 0.530, "wo")
+inconel718.add_element("Mo", 0.031, "wo")
+inconel718.add_element("Nb", 0.026, "wo")
+inconel718.add_element("Ta", 0.026, "wo")
+inconel718.add_element("Fe", 0.197, "wo")
+
+# Graphite
+graphite = openmc.Material(name = "Graphite")
+graphite.set_density("g/cm3", 2.26)
+
+graphite.add_element("C", 1.0, "ao")
+
 all_snre_materials = [
-    fuel, zrc, zrh, be, ss, h, al, be_barrel,
-    low_tt_plen, core_support_plate, up_tt_plen, 
-    borated_zrh, plenum_hydrogen, cd_actuator]
+    fuel, zrc, porous_zrc, zrh, be, ss, prop_hydrogen, al, 
+    be_barrel, low_tt_plen, core_support_plate, up_tt_plen, 
+    borated_zrh, plenum_hydrogen, cd_actuator, graphite, inconel718
+]
