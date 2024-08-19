@@ -1,15 +1,27 @@
-fuel_T: list[list] = []
+def read_data(path: str):
 
-with open("playground/coupling_data/fuel_T.csv", "r") as file:
-    lines = file.readlines()
+    data: list[list] = []
 
-    for line in lines:
-        fuel_T.append([])
+    with open(path, "r") as file:
+        lines = file.readlines()
 
-        line = line.replace(" ", "")
-        line = line.replace("\n", "")
-        
-        vals = line.split(",")
-        
-        for val in vals:
-            fuel_T[-1].append(float(val))
+        for line in lines:
+            data.append([])
+
+            line = line.replace(" ", "")
+            line = line.replace("\n", "")
+            
+            vals = line.split(",")
+
+            for val in vals:
+                data[-1].append(float(val))
+
+    return data
+
+fuel_T = read_data("playground/coupling_data/fuel_T.csv")
+fuel_prop_T = read_data("playground/coupling_data/fuel_prop_T.csv")
+fuel_prop_rho = read_data("playground/coupling_data/fuel_prop_rho.csv")
+
+mod_T = read_data("playground/coupling_data/mod_T.csv")
+mod_prop_T = read_data("playground/coupling_data/mod_prop_T.csv")
+mod_prop_rho = read_data("playground/coupling_data/mod_prop_rho.csv")
