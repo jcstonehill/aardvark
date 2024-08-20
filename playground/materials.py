@@ -2,6 +2,18 @@ import openmc
 
 import coupling_data
 
+_color_black = (0, 0, 0)
+_color_white = (255, 255, 255)
+_color_dark_grey = (135, 135, 135)
+_color_darker_grey = (95, 95 ,95)
+_color_light_grey = (175, 175, 175)
+_color_lighter_grey = (215, 215, 215)
+_color_dark_blue = (0, 0, 135)
+_color_dark_red = (135, 0, 0)
+_color_dark_green = (0, 95, 0)
+
+plotting_colors = {}
+
 all_materials = openmc.Materials()
 
 # Fuel Prop
@@ -18,21 +30,40 @@ for set in coupling_data.fuel_prop_rho:
         fuel_prop[-1].append(_mat)
         all_materials.append(_mat)
 
+        plotting_colors[_mat] = _color_dark_blue
 
-# Mod Prop
-mod_prop: list[list] = []
 
-for set in coupling_data.mod_prop_rho:
-    mod_prop.append([])
+# Mod Supply Prop
+mod_supply_prop: list[list] = []
+
+for set in coupling_data.mod_supply_prop_rho:
+    mod_supply_prop.append([])
 
     for rho in set:
-        _mat = openmc.Material(name = "Mod Prop")
+        _mat = openmc.Material(name = "Mod Supply Prop")
         _mat.set_density("g/cm3", rho)
         _mat.add_element("H", 1.0, "ao")
 
-        mod_prop[-1].append(_mat)
+        mod_supply_prop[-1].append(_mat)
         all_materials.append(_mat)
 
+        plotting_colors[_mat] = _color_dark_blue
+
+# Mod Return Prop
+mod_return_prop: list[list] = []
+
+for set in coupling_data.mod_return_prop_rho:
+    mod_return_prop.append([])
+
+    for rho in set:
+        _mat = openmc.Material(name = "Mod Return Prop")
+        _mat.set_density("g/cm3", rho)
+        _mat.add_element("H", 1.0, "ao")
+
+        mod_return_prop[-1].append(_mat)
+        all_materials.append(_mat)
+
+        plotting_colors[_mat] = _color_dark_blue
 
 # (U,Zr)C-Graphite
 fuel = openmc.Material(name = "(U,Zr)C-Graphite")
@@ -51,6 +82,7 @@ fuel.add_nuclide("Zr94",     0.02763,    "ao")
 fuel.add_nuclide("Zr96",     0.00445,    "ao")
 
 all_materials.append(fuel)
+plotting_colors[fuel] = _color_dark_red
 
 
 # ZrC
@@ -61,6 +93,7 @@ zrc.add_element("Zr", 0.5, "ao")
 zrc.add_element("C", 0.5, "ao")
 
 all_materials.append(zrc)
+plotting_colors[zrc] = _color_lighter_grey
 
 
 # Insulator
@@ -71,6 +104,7 @@ porous_zrc.add_element("Zr", 0.5, "ao")
 porous_zrc.add_element("C", 0.5, "ao")
 
 all_materials.append(porous_zrc)
+plotting_colors[porous_zrc] = _color_dark_grey
 
 
 # ZrH
@@ -81,6 +115,7 @@ zrh.add_element("Zr", 0.33333, "ao")
 zrh.add_element("H", 0.66667, "ao")
 
 all_materials.append(zrh)
+plotting_colors[zrh] = _color_darker_grey
 
 
 # Be
@@ -170,6 +205,7 @@ plenum_hydrogen.set_density("g/cm3", 0.0027)
 plenum_hydrogen.add_element("H", 1.0, "ao")
 
 all_materials.append(plenum_hydrogen)
+plotting_colors[plenum_hydrogen] = _color_dark_blue
 
 
 # Smeared CD Actuator
@@ -195,6 +231,7 @@ inconel718.add_element("Ta", 0.026, "wo")
 inconel718.add_element("Fe", 0.197, "wo")
 
 all_materials.append(inconel718)
+plotting_colors[inconel718] = _color_dark_grey
 
 
 # Graphite
@@ -204,3 +241,4 @@ graphite.set_density("g/cm3", 2.26)
 graphite.add_element("C", 1.0, "ao")
 
 all_materials.append(graphite)
+plotting_colors[graphite] = _color_darker_grey
