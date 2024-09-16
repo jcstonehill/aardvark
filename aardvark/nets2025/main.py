@@ -196,7 +196,7 @@ for source_i in source_is:
     settings = openmc.Settings()
     settings.run_mode = "fixed source"
     settings.source = source
-    settings.batches = 200
+    settings.batches = 100
     settings.particles = 100000
     settings.create_fission_neutrons = False
     settings.create_delayed_neutrons = False
@@ -207,7 +207,7 @@ for source_i in source_is:
     #openmc.plot_geometry()
     openmc.run()
 
-    sp = openmc.StatePoint("statepoint.200.h5")
+    sp = openmc.StatePoint("statepoint.100.h5")
 
     tally: openmc.Tally = sp.get_tally(name = "time")
     values = [val[0][0] for val in tally.mean]
@@ -216,11 +216,11 @@ for source_i in source_is:
     # plt.savefig("time.png")
 
     tally: openmc.Tally = sp.get_tally(name = "timespace")
-
+    values = [val[0][0] for val in tally.mean]
     # df = tally.get_pandas_dataframe()
     # df.to_csv("results.csv")
 
-    # values = [val[0][0] for val in tally.mean]
+    
     # dataset = {
     #     "fission" : np.array(values)
     # }
