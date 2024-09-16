@@ -11,15 +11,17 @@ I = 20
 J = 20
 K = 20
 
-N = I*J*K
+end_time = 0.0001
+time_N = 20
 
-T_fuel = [300, 300]
-T_prop = [300, 300]
-rho_prop = [0.07, 0.07]
+T_fuel = [300, 300, 300]
+T_prop = [300, 300, 300]
+rho_prop = [0.07, 0.07, 0.07]
 
-poison_frac = 0.0029
+poison_frac = 0.0028
 
 # Start Creating Case
+N = I*J*K
 model = openmc.Model()
 
 fuel = openmc.Material(name = "(U,Zr)C-Graphite")
@@ -71,17 +73,11 @@ def get_axially_subdivided_universe(T, mat):
 
         for i in range(len(T)+1):
             surfaces.append(openmc.ZPlane(z0+i*dz))
-
-        surfaces[0].boundary_type = "vacuum"
-        surfaces[-1].boundary_type = "vacuum"
-
         regions = openmc.model.subdivide(surfaces)
-        regions.pop(0)
-        regions.pop(-1)
 
-        for i in range(len(regions)):
+        for i in range(len(T)):
             cell = openmc.Cell()
-            cell.region = regions[i]
+            cell.region = regions[i+1]
             cell.temperature = T[i]
 
             if(type(mat) is list):
@@ -126,12 +122,20 @@ fuel_outer_surf = openmc.model.HexagonalPrism(edge_length = 1.895/np.sqrt(3), or
 clad_outer_surf = openmc.model.HexagonalPrism(edge_length = 1.905/np.sqrt(3), orientation = "x")
 clad_outer_surf.boundary_type = "reflective"
 
+top = openmc.ZPlane(89/2)
+bottom = openmc.ZPlane(-89/2)
+top.boundary_type = "vacuum"
+bottom.boundary_type = "vacuum"
+
+kill_surf = openmc.ZCylinder(0, 0, 5)
+kill_surf.boundary_type = "vacuum"
+
 
 fa_universe = openmc.Universe()
-inner_cell = openmc.Cell(region = -fuel_outer_surf, fill = lattice)
-outer_cell = openmc.Cell(region = +fuel_outer_surf & -clad_outer_surf, fill = clad_universe)
-
-fa_universe.add_cells([inner_cell, outer_cell])
+inner_cell = openmc.Cell(region = -fuel_outer_surf & -top & +bottom, fill = lattice)
+outer_cell = openmc.Cell(region = +fuel_outer_surf & -clad_outer_surf & -top & +bottom, fill = clad_universe)
+kill_cell = openmc.Cell(region = +clad_outer_surf & -kill_surf & -top & +bottom, fill = None)
+fa_universe.add_cells([inner_cell, outer_cell, kill_cell])
 
 model.geometry = openmc.Geometry(fa_universe)
 
@@ -141,14 +145,20 @@ mesh.lower_left = (-1.1, -1.1, -89/2)
 mesh.upper_right = (1.1, 1.1, 89/2)
 
 meshfilter = openmc.MeshFilter(mesh)
+meshbornfilter = openmc.MeshBornFilter(mesh)
 
-times = np.linspace(0, 0.00012, 20)
+times = np.linspace(0, end_time, time_N)
 timefilter = openmc.TimeFilter(times)
 
 tallies = openmc.Tallies()
-tally = openmc.Tally()
+tally = openmc.Tally(name = "timespace")
 tally.scores = ["fission"]
 tally.filters = [meshfilter, timefilter]
+tallies.append(tally)
+
+tally = openmc.Tally(name = "time")
+tally.scores = ["fission"]
+tally.filters = [timefilter]
 tallies.append(tally)
 
 model.tallies = tallies
@@ -169,10 +179,10 @@ plots.append(plot)
 
 model.plots = plots
 
-mesh_i = 30
+source_i = 4200
 source = openmc.IndependentSource()
 strengths = N*[0]
-strengths[mesh_i] = 1
+strengths[source_i] = 1
 space = openmc.stats.MeshSpatial(mesh, strengths)
 source.space = space
 
@@ -180,18 +190,30 @@ settings = openmc.Settings()
 #settings.run_mode = "fixed source"
 #settings.source = source
 settings.batches = 100
-settings.particles = 10000
-settings.create_fission_neutrons = True
-settings.create_delayed_neutrons = True
+settings.inactive = 50
+settings.particles = 1000
+settings.create_fission_neutrons = False
+settings.create_delayed_neutrons = False
 model.settings = settings
 
 model.export_to_xml()
 
+#openmc.plot_geometry()
 openmc.run()
 
 sp = openmc.StatePoint("statepoint.100.h5")
-tally: openmc.Tally = sp.get_tally(scores = ["fission"])
+
+tally: openmc.Tally = sp.get_tally(name = "time")
+values = [val[0][0] for val in tally.mean]
+
+plt.plot([0.5*times[i] + 0.5*times[i+1] for i in range(len(times)-1)], values)
+plt.savefig("time.png")
+
+tally: openmc.Tally = sp.get_tally(name = "timespace")
 
 df = tally.get_pandas_dataframe()
-
 df.to_csv("results.csv")
+
+print(tally.mean)
+
+# values = [val[0][0] for val in tally.mean]
