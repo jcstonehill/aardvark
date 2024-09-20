@@ -133,8 +133,8 @@ def _get_axially_subdivided_universe(T, mat):
 
     return universe
     
-fuel_elements = []
-moderator_elements = []
+fuel_elements = [None]
+moderator_elements = [None]
 
 for i in range(17):
     _fe_universe = get_fuel_assembly(
@@ -155,6 +155,8 @@ for i in range(17):
 
     fuel_elements.append(_fe_universe)
     moderator_elements.append(_me_universe)
+
+filler_element = openmc.Universe(cells = [openmc.Cell(fill = materials.be)])
 
 if __name__ == "__main__":
     geom = openmc.Geometry(root=moderator_elements[0])

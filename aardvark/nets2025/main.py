@@ -23,7 +23,7 @@ poison_frac = 0.0028
 
 source_is = range(1000)
 
-for source_i in source_is:
+for source_i in [0]:
     print("_____ _____ _____")
     print("Source i: " + str(source_i))
     print("_____ _____ _____")
@@ -185,6 +185,13 @@ for source_i in source_is:
     plot.pixels = (round(2.5*100), 100*100)
     plots.append(plot)
 
+    plot = openmc.Plot()
+    plot.type = "voxel"
+    plot.color_by = "material"
+    plot.width = (2.5, 2.5, 100)
+    plot.pixels = (500, 500, 500)
+    plots.append(plot)
+
     model.plots = plots
 
     source = openmc.IndependentSource()
@@ -204,8 +211,8 @@ for source_i in source_is:
 
     model.export_to_xml()
 
-    #openmc.plot_geometry()
-    openmc.run()
+    openmc.plot_geometry()
+    #openmc.run()
 
     sp = openmc.StatePoint("statepoint.100.h5")
 

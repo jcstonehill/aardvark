@@ -69,17 +69,19 @@ for set in coupling_data.mod_return_prop_rho:
 fuel = openmc.Material(name = "(U,Zr)C-Graphite")
 fuel.set_density("g/cm3", 3.64)
 
-fuel.add_nuclide("U234",     0.00022,    "ao")
-fuel.add_nuclide("U235",     0.01906,    "ao")
-fuel.add_nuclide("U236",     0.00004,    "ao")
-fuel.add_nuclide("U238",     0.00112,    "ao")
-fuel.add_nuclide("C12",      0.81148,    "ao")
-fuel.add_nuclide("C13",      0.00909,    "ao")
-fuel.add_nuclide("Zr90",     0.08180,    "ao")
-fuel.add_nuclide("Zr91",     0.01784,    "ao")
-fuel.add_nuclide("Zr92",     0.02727,    "ao")
-fuel.add_nuclide("Zr94",     0.02763,    "ao")
-fuel.add_nuclide("Zr96",     0.00445,    "ao")
+fuel.add_nuclide("U234",     0.001736,    "wo")
+fuel.add_nuclide("U235",     0.153584,    "wo")
+fuel.add_nuclide("U236",     0.000340,    "wo")
+fuel.add_nuclide("U238",     0.009176,    "wo")
+
+fuel.add_nuclide("C12",      0.333888,    "wo")
+fuel.add_nuclide("C13",      0.004024,    "wo")
+
+fuel.add_nuclide("Zr90",     0.252215,    "wo")
+fuel.add_nuclide("Zr91",     0.055614,    "wo")
+fuel.add_nuclide("Zr92",     0.085942,    "wo")
+fuel.add_nuclide("Zr94",     0.088991,    "wo")
+fuel.add_nuclide("Zr96",     0.014490,    "wo")
 
 all_materials.append(fuel)
 plotting_colors[fuel] = _color_dark_red
@@ -242,3 +244,13 @@ graphite.add_element("C", 1.0, "ao")
 
 all_materials.append(graphite)
 plotting_colors[graphite] = _color_darker_grey
+
+
+# Poison
+poison = openmc.Material(name = "Hafnium")
+poison.set_density("g/cm3", 13.07)
+
+poison.add_element("Hf", 1.0, "ao")
+
+all_materials.append(poison)
+plotting_colors[poison] = _color_black
