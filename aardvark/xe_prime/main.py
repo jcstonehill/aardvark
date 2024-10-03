@@ -1,6 +1,7 @@
 import openmc
 import openmc.model
 import numpy as np
+import matplotlib.pyplot as plt
 
 materials = openmc.Materials()
 
@@ -29,6 +30,22 @@ materials.append(pyrographite_mat)
 unfueled_graphite_mat = openmc.Material()
 unfueled_graphite_mat.add_element("C", 1.0, "ao")
 materials.append(unfueled_graphite_mat)
+
+be_mat = openmc.Material()
+be_mat.add_element("Be", 1.0, "ao")
+materials.append(be_mat)
+
+b4c_mat = openmc.Material()
+b4c_mat.add_element("B", 1.0, "ao")
+materials.append(b4c_mat)
+
+interface_mat = openmc.Material()
+interface_mat.add_element("C", 1.0, "ao")
+materials.append(interface_mat)
+
+pv_mat = openmc.Material()
+pv_mat.add_element("C", 1.0, "ao")
+materials.append(pv_mat)
 
 prop_or = openmc.ZCylinder(r = 0.1213104)
 coating_or = openmc.ZCylinder(r = 0.12573)
@@ -98,153 +115,346 @@ ue_universe.add_cell(cell)
 unfueled = openmc.Cell(fill = unfueled_graphite_mat)
 unfueled_universe = openmc.Universe(cells = [unfueled])
 
-root = openmc.Universe()
+core = openmc.Universe()
 
-elements = {}
+fueled_elements = {}
+center_elements = {}
 
-def place_cluster(x, y, loading_codes):
-    surf = openmc.model.HexagonalPrism(origin = (x, y), edge_length = 1.91516/np.sqrt(3), orientation = "x")
-
-    cell = openmc.Cell(fill = ue_universe, region = -surf)
-    cell.translation = (x, y, 0)
-    root.add_cell(cell)
-
+def add_cluster_set(center_x, center_y, ring_id, cluster_id):
+    # Unfueled Element
     for i in range(6):
-        angle = 2*i*np.pi/6 + np.pi/2
+        r = np.sqrt(center_x**2 + center_y**2)
+        angle0 = np.arctan(center_y/center_x)
+        angle = angle0 + i*2*np.pi/6
+
+        x = r*np.cos(angle)
+        y = r*np.sin(angle)
+
+        key = str(i+1) + str(ring_id) + "-" + cluster_id + "A"
+        center_elements[key] = (x, y)
+
+    element_ids =["B", "C", "D", "E", "F", "G"]
+
+    for j in range(6):
+        angle = 2*j*np.pi/6 + np.pi/2
         dx = 1.91516*np.cos(angle)
         dy = 1.91516*np.sin(angle)
 
-        loading_
+        x0 = center_x + dx
+        y0 = center_y + dy
 
-        # surf = openmc.model.HexagonalPrism(origin = (x+dx, y+dy), edge_length = 1.91516/np.sqrt(3), orientation = "x")
-        # cell = openmc.Cell(fill = fe_universe, region = -surf)
-        # cell.translation = (x+dx, y+dy, 0)
-        # root.add_cell(cell)
+        angle0 = np.arctan(y0/x0)
+
+        r = np.sqrt(x0**2 + y0**2)
+
+        for i in range(6):
+            angle = angle0 + i*2*np.pi/6
+            x = r*np.cos(angle)
+            y = r*np.sin(angle)
+
+            key = key = str(i+1) + str(ring_id) + "-" + cluster_id + element_ids[j]
+            fueled_elements[key] = (x, y)
+
+# Center Cluster
+element_ids =["B", "C", "D", "E", "F", "G"]
+center_elements["00-00"] = (0, 0)
+for j in range(6):
+    angle = 2*j*np.pi/6 + np.pi/2
+    dx = 1.91516*np.cos(angle)
+    dy = 1.91516*np.sin(angle)
+
+    x0 = dx
+    y0 = dy
+
+    angle0 = np.arctan(y0/x0)
+
+    key = key = "00" + "-" + "0" + element_ids[j]
+    fueled_elements[key] = (dx, dy)
 
 f2f = 1.91516
 edge = 1.91516/np.sqrt(3)
 
-# 000
-place_cluster(0,0)
-
+ring_ids = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"]
 for i in range(7):
-    N = 2+i
+    N = 1+i
 
-    anchor_x = -1.5*(i+1)*edge
-    anchor_y = -2.5*(i+1)*f2f
+    anchor_x = -3*(i+1)*edge
+    anchor_y = -2*(i+1)*f2f
 
     for j in range(N):
         x = anchor_x+(4.5*j*edge)
-        y = anchor_y+(0.5*j*f2f)
+        y = anchor_y-(0.5*j*f2f)
 
-        place_cluster(x,y)
-        
+        add_cluster_set(x, y, ring_ids[i], str(j+1))
+
+anchor_x = -3*8*edge
+anchor_y = -2*8*f2f
+x = anchor_x + 4.5*edge
+y = anchor_y - 0.5*f2f
+
+add_cluster_set(x, y, "J", str(3))
+
+for i in range(5):
+    x = anchor_x + (4.5*(2+i)*edge)
+    y = anchor_y - (0.5*(2+i)*f2f)
+
+    add_cluster_set(x, y, "H", str(i+3))
+
+x = anchor_x + (4.5*(2+5)*edge)
+y = anchor_y - (0.5*(2+5)*f2f)
+
+add_cluster_set(x, y, "J", str(9))
+
+def add_fuel_element(x0, y0, suffix):
+    angle0 = np.arctan(y0/x0)
+
+    r = np.sqrt(x0**2 + y0**2)
+
+    for i in range(6):
+        angle = angle0 + i*2*np.pi/6
+        x = r*np.cos(angle)
+        y = r*np.sin(angle)
+
+        key = key = str(i+1) + suffix
+        fueled_elements[key] = (x, y)
+
+def add_center_element(x0, y0, suffix):
+    angle0 = np.arctan(y0/x0)
+
+    r = np.sqrt(x0**2 + y0**2)
+
+    for i in range(6):
+        angle = angle0 + i*2*np.pi/6
+        x = r*np.cos(angle)
+        y = r*np.sin(angle)
+
+        key = key = str(i+1) + suffix
+        center_elements[key] = (x, y)
+
+# Add irregular clusters
+anchor_x = -3*8*edge
+anchor_y = -2*8*f2f
+
+# C1
+x = anchor_x + 1.5*edge
+y = anchor_y - 1.5*f2f
+add_fuel_element(x, y, "J-3J")
+x = anchor_x + 1.5*edge
+y = anchor_y - 2.5*f2f
+add_fuel_element(x, y, "J-3H")
+
+# C2
+x = anchor_x + 3*edge
+y = anchor_y - 2*f2f
+add_center_element(x, y, "J-3AA")
+x = anchor_x + 3*edge
+y = anchor_y - 3*f2f
+add_fuel_element(x, y, "J-3N")
+
+# C3
+x = anchor_x + 4.5*edge
+y = anchor_y - 2.5*f2f
+add_fuel_element(x, y, "J-3S")
+x = anchor_x + 4.5*edge
+y = anchor_y - 3.5*f2f
+add_fuel_element(x, y, "J-3T")
+
+# C4
+x = anchor_x + 6*edge
+y = anchor_y - 2*f2f
+add_fuel_element(x, y, "J-3R")
+x = anchor_x + 6*edge
+y = anchor_y - 3*f2f
+add_center_element(x, y, "J-3AAA")
+x = anchor_x + 6*edge
+y = anchor_y - 4*f2f
+add_fuel_element(x, y, "J-3U")
+
+# C5
+x = anchor_x + 7.5*edge
+y = anchor_y - 2.5*f2f
+add_fuel_element(x, y, "J-3W")
+x = anchor_x + 7.5*edge
+y = anchor_y - 3.5*f2f
+add_fuel_element(x, y, "J-3V")
+x = anchor_x + 7.5*edge
+y = anchor_y - 4.5*f2f
+add_fuel_element(x, y, "J-4M")
+
+# C6
+x = anchor_x + 9*edge
+y = anchor_y - 3*f2f
+add_fuel_element(x, y, "J-4C")
+y = anchor_y - 4*f2f
+add_fuel_element(x, y, "J-4D")
+y = anchor_y - 5*f2f
+add_fuel_element(x, y, "J-4H")
+
+# # C7
+# x = anchor_x + 10.5*edge
+# y = anchor_y - 2.5*f2f
+# add_fuel_element(x, y, "J-4B")
+# y = anchor_y - 3.5*f2f
+# add_center_element(x, y, "J-4A")
+# y = anchor_y - 4.5*f2f
+# add_center_element(x, y, "J-4AA")
+
+# # C8
+# x = anchor_x + 12.5*edge
+# y = anchor_y - 4*f2f
+# add_fuel_element(x, y, "J-4G")
+# y = anchor_y - 5*f2f
+# add_fuel_element(x, y, "J-4F")
+# y = anchor_y - 6*f2f
+# add_fuel_element(x, y, "J-4K")
 
 
-# A
-# place_cluster(-1.5*edge, -2.5*f2f)
-# place_cluster(3*edge, -2*f2f)
-
-# # B
-# place_cluster(-3*edge, -5*f2f)
-# core_lat = openmc.HexLattice()
-
-# r0 = [0]
-# r1 = [0]
-# r2 = [0, 0]
-# r3 = [0, 1, 0]
-# r4 = [0, 0, 0, 0]
-# r5 = [0, 0, 0, 0, 1]
-# r6 = [0, 0, 1, 0, 0, 0]
-# r7 = [1, 0, 0, 0, 0, 0, 0]
-# r8 = [0, 0, 0, 0, 0, 1, 0, 0]
-# r9 = [0, 0, 0, 1, 0, 0, 0, 0, 0]
-# r10 = [0, 1, 0, 0, 0, 0, 0, 0, 1, 0]
-
-# universe_ids = [r10, r9, r8, r7, r6, r5, r4, r3, r2, r1]
-
-# universes = []
-
-# for ring in universe_ids:
-#     new_ring = []
-
-#     for _ in range(6):
-#         for i in ring:
-#             if(i==1):
-#                 new_ring.append(ue_universe)
-#             else:
-#                 new_ring.append(fe_universe)
-
-#     universes.append(new_ring)
-
-# universes.append([ue_universe])
 
 
 
-# universes = [
-#     6*[fe_universe],
-#     1*[ue_universe]
-# ]
 
-# N = 12
-# offset = 1
-# for i in range(3):
-#     universes.insert(0, N*[fe_universe])
-#     N += 6
 
-#     ue_ring = []
 
-#     counter = N
 
-#     for _ in range(offset):
-#         ue_ring.append(fe_universe)
+region = None
 
-#     while counter > 0:
-#         counter -= 3
-#         ue_ring.extend([ue_universe, fe_universe, fe_universe])
+for pos in center_elements.values():
+    surf = openmc.model.HexagonalPrism(origin = pos, edge_length = 1.91516/np.sqrt(3), orientation = "x")
+    cell = openmc.Cell(region = -surf, fill = ue_universe)
+    cell.translation = (pos[0], pos[1], 0)
+    core.add_cell(cell)
 
-#     while(len(ue_ring) > N):
-#         ue_ring.pop(-1)
+    if(region is None):
+        region = -surf
 
-#     universes.insert(0, ue_ring)
-#     N += 6
+    else:
+        region = region & -surf
 
-#     universes.insert(0, N*[fe_universe])
-#     N += 6 
+for pos in fueled_elements.values():
+    surf = openmc.model.HexagonalPrism(origin = pos, edge_length = 1.91516/np.sqrt(3), orientation = "x")
+    cell = openmc.Cell(region = -surf, fill = fe_universe)
+    cell.translation = (pos[0], pos[1], 0)
+    core.add_cell(cell)
 
-#     offset += 2
+    region = region & -surf
 
-#     if(offset >= 3):
-#         offset -= 3
-    
 
-# core_lat.center = (0., 0.)
-# core_lat.universes = universes
-# core_lat.pitch = (1.91516,)
-# core_lat.outer = unfueled_universe
 
-# cell = openmc.Cell(fill=core_lat)
-# root = openmc.Universe(cells=[cell])
+
+outer_cell = openmc.Cell(region = ~region, fill = unfueled_graphite_mat)
+core.add_cell(outer_cell)
+
+cd_fill_universe = openmc.Universe()
+cd_or = openmc.ZCylinder(r = 4.76+0.125)
+poison_ir = openmc.ZCylinder(r = 4.76)
+poison_plane1 = openmc.YPlane()
+poison_plane2 = openmc.Plane.from_points([0, 0, 0], [-0.5, 0.866025, 0], [-0.5, 0.866025, 1])
+
+poison_region = +poison_plane1 & +poison_plane2 & +poison_ir & -cd_or
+cd_region = ~poison_region & -cd_or
+cd_flow_region = +cd_or
+
+cd_fill_universe.add_cell(openmc.Cell(region = cd_region, fill = be_mat))
+cd_fill_universe.add_cell(openmc.Cell(region = poison_region, fill = b4c_mat))
+cd_fill_universe.add_cell(openmc.Cell(region = cd_flow_region, fill = None))
+
+core_or = openmc.ZCylinder(r=2.54*17.785)
+interface_or = openmc.ZCylinder(r = 2.54*40/2)
+gap1_or = openmc.ZCylinder(r=50.96637)
+refl_or = openmc.ZCylinder(r=62.69863)
+gap2_or = openmc.ZCylinder(r=2.54*49.562/2)
+pv_or = openmc.ZCylinder(r=2.54*50.530/2)
+pv_or.boundary_type = "vacuum"
+root = openmc.Universe()
+core_cell = openmc.Cell(fill = core, region = -core_or)
+root.add_cell(core_cell)
+
+interface_cell = openmc.Cell(fill = interface_mat, region = +core_or & -interface_or)
+gap1_cell = openmc.Cell(fill = None, region = -gap1_or & +interface_or)
+root.add_cells([interface_cell, gap1_cell])
+
+refl_region = +gap1_or & -refl_or
+for i in range(12):
+    angle0 = 0
+
+    angle = angle0 + 2*np.pi*i/12
+    x = 56.8325*np.cos(angle)
+    y = 56.8325*np.sin(angle)
+
+    surf = openmc.ZCylinder(x, y, r = 5.42798)
+
+    refl_region = refl_region & +surf
+
+    cell = openmc.Cell(region = -surf, fill = cd_fill_universe)
+    cell.translation = (x, y, 0)
+    cell.rotation = (0, 0, angle)
+
+    root.add_cell(cell)
+
+cell = openmc.Cell(region = refl_region, fill = be_mat)
+root.add_cell(cell)
+
+cell = openmc.Cell(region = +refl_or & -gap2_or, fill = None)
+root.add_cell(cell)
+
+cell = openmc.Cell(region = +gap2_or & -pv_or, fill = pv_mat)
+root.add_cell(cell)
+
+
+
+fig = plt.figure()
+ax = fig.add_subplot()
+plt.grid(True)
+ax.set_aspect("equal")
+
+x = []
+y = []
+
+for pos in fueled_elements.values():
+    x.append(pos[0])
+    y.append(pos[1])
+
+plt.plot(x,y, "o")
+
+x = []
+y = []
+
+for pos in center_elements.values():
+    x.append(pos[0])
+    y.append(pos[1])
+
+plt.plot(x,y, "o")
+
+
+plt.savefig("elements.png")
 
 plots = openmc.Plots()
 plot = openmc.Plot()
 plot.basis = "xy"
-plot.width = (100, 100)
+plot.width = (125, 125)
 plot.color_by = "material"
 plot.pixels = (2000, 2000)
 plots.append(plot)
 
-plot = openmc.Plot()
-plot.basis = "yz"
-plot.width = (2.5, 100)
-plot.pixels = (round(2.5*100), 100*100)
-plots.append(plot)
+# plot = openmc.Plot()
+# plot.basis = "yz"
+# plot.width = (2.5, 100)
+# plot.pixels = (round(2.5*100), 100*100)
+# plots.append(plot)
+
+settings = openmc.Settings()
+settings.batches = 100
+settings.inactive = 50
+settings.particles = 10000
 
 model = openmc.Model()
 model.materials = materials
 model.geometry = openmc.Geometry(root)
 model.plots = plots
+model.settings = settings
 
 model.export_to_xml()
 
 openmc.plot_geometry()
+
+#openmc.run()
