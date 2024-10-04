@@ -291,27 +291,163 @@ y = anchor_y - 5*f2f
 add_fuel_element(x, y, "J-4H")
 
 # # C7
-# x = anchor_x + 10.5*edge
-# y = anchor_y - 2.5*f2f
-# add_fuel_element(x, y, "J-4B")
-# y = anchor_y - 3.5*f2f
-# add_center_element(x, y, "J-4A")
-# y = anchor_y - 4.5*f2f
-# add_center_element(x, y, "J-4AA")
+x = anchor_x + 10.5*edge
+y = anchor_y - 2.5*f2f
+add_fuel_element(x, y, "J-4B")
+y = anchor_y - 3.5*f2f
+add_center_element(x, y, "J-4A")
+y = anchor_y - 4.5*f2f
+add_center_element(x, y, "J-4AA")
 
-# # C8
-# x = anchor_x + 12.5*edge
-# y = anchor_y - 4*f2f
-# add_fuel_element(x, y, "J-4G")
-# y = anchor_y - 5*f2f
-# add_fuel_element(x, y, "J-4F")
-# y = anchor_y - 6*f2f
-# add_fuel_element(x, y, "J-4K")
+# C8
+x = anchor_x + 12*edge
+y = anchor_y - 3*f2f
+add_fuel_element(x, y, "J-4G")
+y = anchor_y - 4*f2f
+add_fuel_element(x, y, "J-4F")
+y = anchor_y - 5*f2f
+add_fuel_element(x, y, "J-4K")
 
+# C9
+x = anchor_x + 13.5*edge
+y = anchor_y - 3.5*f2f
+add_fuel_element(x, y, "J-5C")
+y = anchor_y - 4.5*f2f
+add_fuel_element(x, y, "J-5D")
+y = anchor_y - 5.5*f2f
+add_fuel_element(x, y, "J-5H")
 
+# C10
+x = anchor_x + 15*edge
+y = anchor_y - 3*f2f
+add_fuel_element(x, y, "J-5B")
+y = anchor_y - 4*f2f
+add_center_element(x, y, "J-5A")
+y = anchor_y - 5*f2f
+add_center_element(x, y, "J-5AA")
+y = anchor_y - 6*f2f
+add_fuel_element(x, y, "J-5J")
 
+# C11
+x = anchor_x + 16.5*edge
+y = anchor_y - 3.5*f2f
+add_fuel_element(x, y, "J-5G")
+y = anchor_y - 4.5*f2f
+add_fuel_element(x, y, "J-5F")
+y = anchor_y - 5.5*f2f
+add_fuel_element(x, y, "J-5K")
 
+# C12
+x = anchor_x + 18*edge
+y = anchor_y - 4*f2f
+add_fuel_element(x, y, "J-6C")
+y = anchor_y - 5*f2f
+add_fuel_element(x, y, "J-6D")
+y = anchor_y - 6*f2f
+add_fuel_element(x, y, "J-6H")
 
+# C13
+x = anchor_x + 19.5*edge
+y = anchor_y - 3.5*f2f
+add_fuel_element(x, y, "J-6B")
+y = anchor_y - 4.5*f2f
+add_center_element(x, y, "J-6A")
+y = anchor_y - 5.5*f2f
+add_center_element(x, y, "J-6AA")
+
+# C14
+x = anchor_x + 21*edge
+y = anchor_y - 4*f2f
+add_fuel_element(x, y, "J-6G")
+y = anchor_y - 5*f2f
+add_fuel_element(x, y, "J-6F")
+y = anchor_y - 6*f2f
+add_fuel_element(x, y, "J-6K")
+
+# C15
+x = anchor_x + 22.5*edge
+y = anchor_y - 4.5*f2f
+add_fuel_element(x, y, "J-7C")
+y = anchor_y - 5.5*f2f
+add_fuel_element(x, y, "J-7D")
+y = anchor_y - 6.5*f2f
+add_fuel_element(x, y, "J-7H")
+
+# C16
+x = anchor_x + 24*edge
+y = anchor_y - 4*f2f
+add_fuel_element(x, y, "J-7B")
+y = anchor_y - 5*f2f
+add_center_element(x, y, "J-7A")
+y = anchor_y - 6*f2f
+add_center_element(x, y, "J-7AA")
+
+# C17
+x = anchor_x + 25.5*edge
+y = anchor_y - 4.5*f2f
+add_fuel_element(x, y, "J-7G")
+y = anchor_y - 5.5*f2f
+add_fuel_element(x, y, "J-7F")
+y = anchor_y - 6.5*f2f
+add_fuel_element(x, y, "J-7K")
+
+# C18
+x = anchor_x + 27*edge
+y = anchor_y - 5*f2f
+add_fuel_element(x, y, "J-8C")
+y = anchor_y - 6*f2f
+add_fuel_element(x, y, "J-8D")
+
+# C19
+x = anchor_x + 28.5*edge
+y = anchor_y - 4.5*f2f
+add_fuel_element(x, y, "J-8B")
+y = anchor_y - 5.5*f2f
+add_center_element(x, y, "J-8A")
+
+# C20
+x = anchor_x + 30*edge
+y = anchor_y - 5*f2f
+add_fuel_element(x, y, "J-8G")
+y = anchor_y - 6*f2f
+add_fuel_element(x, y, "J-8F")
+
+# C21
+x = anchor_x + 31.5*edge
+y = anchor_y - 5.5*f2f
+add_fuel_element(x, y, "J-9K")
+
+# C22
+x = anchor_x + 33*edge
+y = anchor_y - 5*f2f
+add_center_element(x, y, "J-8AA")
+y = anchor_y - 6*f2f
+add_fuel_element(x, y, "J-9H")
+
+# C23
+x = anchor_x + 34.5*edge
+y = anchor_y - 3.5*f2f
+add_fuel_element(x, y, "J-9R")
+y = anchor_y - 4.5*f2f
+add_fuel_element(x, y, "J-9S")
+y = anchor_y - 5.5*f2f
+add_fuel_element(x, y, "J-9P")
+
+# C24
+x = anchor_x + 36*edge
+y = anchor_y - 3*f2f
+add_fuel_element(x, y, "J-9W")
+y = anchor_y - 4*f2f
+add_center_element(x, y, "J-8AAA")
+y = anchor_y - 5*f2f
+add_fuel_element(x, y, "J-9T")
+
+# C25
+x = anchor_x + 37.5*edge
+y = anchor_y - 3.5*f2f
+add_fuel_element(x, y, "J-9V")
+y = anchor_y - 4.5*f2f
+add_fuel_element(x, y, "J-9U")
 
 
 
@@ -346,7 +482,8 @@ core.add_cell(outer_cell)
 
 cd_fill_universe = openmc.Universe()
 cd_or = openmc.ZCylinder(r = 4.76+0.125)
-poison_ir = openmc.ZCylinder(r = 4.76)
+poison_ir = openmc.ZCylinder(r = 4.5)
+#poison_ir = openmc.ZCylinder(r = 4.76)
 poison_plane1 = openmc.YPlane()
 poison_plane2 = openmc.Plane.from_points([0, 0, 0], [-0.5, 0.866025, 0], [-0.5, 0.866025, 1])
 
@@ -374,6 +511,9 @@ gap1_cell = openmc.Cell(fill = None, region = -gap1_or & +interface_or)
 root.add_cells([interface_cell, gap1_cell])
 
 refl_region = +gap1_or & -refl_or
+
+cd_angle = 90
+
 for i in range(12):
     angle0 = 0
 
@@ -387,7 +527,7 @@ for i in range(12):
 
     cell = openmc.Cell(region = -surf, fill = cd_fill_universe)
     cell.translation = (x, y, 0)
-    cell.rotation = (0, 0, angle)
+    cell.rotation = (0, 0, i*360/12 + 120 - cd_angle)
 
     root.add_cell(cell)
 
@@ -414,7 +554,7 @@ for pos in fueled_elements.values():
     x.append(pos[0])
     y.append(pos[1])
 
-plt.plot(x,y, "o")
+plt.plot(x,y, ".")
 
 x = []
 y = []
@@ -423,15 +563,19 @@ for pos in center_elements.values():
     x.append(pos[0])
     y.append(pos[1])
 
-plt.plot(x,y, "o")
+plt.plot(x,y, ".")
 
 
 plt.savefig("elements.png")
 
+colors = {
+    
+}
+
 plots = openmc.Plots()
 plot = openmc.Plot()
 plot.basis = "xy"
-plot.width = (125, 125)
+plot.width = (15, 15)
 plot.color_by = "material"
 plot.pixels = (2000, 2000)
 plots.append(plot)
